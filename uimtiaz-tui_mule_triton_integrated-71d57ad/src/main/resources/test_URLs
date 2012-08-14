@@ -1,0 +1,76 @@
+STATUS CLASS
+------------
+STATUS.GetStatus
+http://localhost:8081/api/STATUS/GetStatus/?k=foo
+
+LOGIN CLASS
+-----------
+LOGIN.AuthenticateBroker
+http://localhost:8081/api/LOGIN/AuthenticateBroker/?APIK=foobarfoobarfoobar&USER=aaayacht&PASS=aaa321
+
+LOGIN.AuthenticateUser
+http://localhost:8081/api/LOGIN/AuthenticateUser/?EMAIL=mpat.e.Imau@gmail.com&PWD=409266
+
+SEARCH CLASS
+------------
+SEARCH.GetBases
+http://localhost:8081/api/SEARCH/GetBases/?brand=B
+
+SEARCH.GetBoats
+http://localhost:8081/api/SEARCH/GetBases/?ccod=US
+
+SEARCH.GetContractHistory
+http://localhost:8081/api/SEARCH/GetContractHistory/?pscd=762925
+
+SEARCH.GetAvailBoats									
+http://localhost:8081/api/SEARCH/GetAvailBoats/?brand=B&base=TOR&year=2012&month=12&day=24&lcod=E&ccod=US&days=07&pax=04&desg=USD&bkng=CLW
+
+SEARCH.GetRate
+http://localhost:8081/api/SEARCH/GetRate/?base=TOR&year=2012&month=12&day=15&days=07&type=3722E&desg=USD
+
+SEARCH.GetFlightRoute (SUNSAIL ONLY, port is 1093)
+http://localhost:8082/api/SEARCH/GetFlightRoute/?base=STO
+
+SEARCH.GetFlight (SUNSAIL ONLY, therefore the port is 1092)
+http://localhost:8081/api/SEARCH/GetFlight/?route=LGW-EIS&brand=E&year=2013&month=01&day=04&ndays=07&pax=04
+
+BOOKING CLASS
+-------------
+
+BOOKING.CreateQuote
+http://localhost:8081/api/BOOKING/CreateQuote/?
+
+BOOKING.GetQuoteHistorySaved
+http://localhost:8081/api/BOOKING/GetQuoteHistorySaved/?
+
+BOOKING.GetQuoteHistory
+http://localhost:8081/api/BOOKING/GetQuoteHistory/?
+
+BOOKING.GetQuote
+http://localhost:8081/api/BOOKING/GetQuote/?
+
+BOOKING.GetCallCenterQuote
+http://localhost:8081/api/BOOKING/GetCallCenterQuote/?
+
+BOOKING.GetContractQuote
+http://localhost:8081/api/BOOKING/GetContractQuote/?
+
+BOOKING.SaveQuote
+http://localhost:8081/api/BOOKING/SaveQuote/?
+
+BOOKING.GetPrices
+http://localhost:8081/api/BOOKING/GetPrices/?
+
+BOOKING.GetInsurPackages
+http://localhost:8081/api/BOOKING/GetInsurPackages/?
+
+BOOKING.GetAncillaryProducts
+http://localhost:8081/api/BOOKING/GetAncillaryProducts/?
+
+BOOKING.AddFlightPassenger
+http://localhost:8081/api/BOOKING/AddFlightPassenger/?
+
+BOOKING.CreateOption
+http://localhost:8081/api/BOOKING/CreateOption/?
+
+

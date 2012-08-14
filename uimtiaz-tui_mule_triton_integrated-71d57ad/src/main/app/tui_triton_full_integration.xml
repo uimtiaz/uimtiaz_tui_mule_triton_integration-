@@ -1,0 +1,687 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:context="http://www.springframework.org/schema/context" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="EE-3.3.0" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd 
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/2.0/mule-mongo.xsd 
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd 
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd 
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd 
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd ">
+    <context:property-placeholder location="classpath:mule-app-default.properties,classpath:mule-app-${env}.properties"/>
+    <mongo:config name="MongoDB-CloudConnector" database="TuiMarine" doc:name="MongoDB-CloudConnector"/>
+    <message-properties-transformer name="text-to-html-msgPropTransformer" doc:name="Message_Properties">
+        <add-message-property key="Content-Type" value="text/html"/>
+    </message-properties-transformer>
+    <catch-exception-strategy name="Default_Exception_Strategy">
+        <logger message="DEFAULT EXCEPTION STRATEGY: #[groovy:message.exceptionPayload]" level="INFO" doc:name="Default Exception Logger"/>
+        <vm:outbound-endpoint exchange-pattern="one-way" path="DLQ" doc:name="DLQ"/>
+    </catch-exception-strategy>
+    <configuration defaultExceptionStrategy-ref="Default_Exception_Strategy" doc:name="Configuration"/>
+    <expression-transformer expression="#[header:session:API-METHOD-ARGS]" name="ONLY-API-METHOD-ARGS" doc:name="ONLY-API-METHOD-ARGS"/>
+    <flow name="tui_mule_auth" doc:name="tui_mule_auth">
+        <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8081" path="api" doc:name="HTTP"/>
+        <logger message="QUERY PARAMS: #[headers:INBOUND:*]" level="INFO" doc:name="QRY Params Logger" doc:description="will http.cookie show up here if cookie is sent to flow?"/>
+        <logger message="INBOUND PAYLOAD: #[payload:]" level="INFO" doc:name="Log Inbound Payload"/>
+        <scripting:transformer doc:name="Set Session Props">
+            <scripting:script engine="Groovy">
+                <scripting:text><![CDATA[// ignore the first /
+// and split by / the rest of the message
+msgArr = payload[1..-1].split('/')
+//println 'msgArr: ' + msgArr
+
+// msgArr[0] should always contain: 'api'
+if (msgArr[0]=='api') {
+	message.setSessionProperty('API-VALID', true)
+    // Error handling: test that msgArr[n] is not null
+	message.setSessionProperty('API-CLASS', msgArr[1])
+	message.setSessionProperty('API-METHOD', msgArr[2]) 
+	message.setSessionProperty('API-METHOD-ARGS', msgArr[3])
+	// remove /api/ at the front of the message
+	return payload[5..-1]
+}
+else {
+    // this is not a proper api invocation
+	// set FALSE to ISVALID message property
+	message.setSessionProperty('IS-VALID', false)
+	message.setSessionProperty('API-CLASS', null)
+	message.setSessionProperty('API-METHOD', null) 
+	message.setSessionProperty('API-METHOD-ARGS', null)
+    return  payload
+}]]></scripting:text>
+            </scripting:script>
+        </scripting:transformer>
+        <logger message="INBOUND AFTER GROOVY: #[payload:]; API-VALID: #[groovy:message.getSessionProperty('API-VALID')];API-CLASS: #[groovy:message.getSessionProperty('API-CLASS')]; API-METHOD: #[groovy:message.getSessionProperty('API-METHOD')]; API-METHOD-ARGS: #[groovy:message.getSessionProperty('API-METHOD-ARGS')]" level="INFO" doc:name="Confirm Session Props"/>
+        <transformer ref="ONLY-API-METHOD-ARGS" doc:name="OnlyArgs"/>
+        <choice doc:name="Choice">
+            <when expression="message.inboundProperties['apikey'] !='' &amp;&amp; message.inboundProperties['token'] ==null">
+                <processor-chain>
+                    <logger message="IN APIKEY Branch: #[payload:]" level="INFO" doc:name="Logger-APIKEY-passed"/>
+                    <scripting:transformer doc:name="Add-Channel-Port-Session-Props-return-apikey">
+                        <scripting:script engine="Groovy">
+                            <scripting:text><![CDATA[sessionVars['TRITON-CHANNEL']=message.getInboundProperty('channel')
+if (sessionVars['TRITON-CHANNEL']=='M')
+	sessionVars['TRITON-PORT']=${triton.moorings.port}
+else {
+	if (sessionVars['TRITON-CHANNEL']=='S')
+		sessionVars['TRITON-PORT']=${triton.sunsail.port}
+	else
+		sessionVars['TRITON-PORT']=0
+}
+return message.getInboundProperty('apikey')]]></scripting:text>
+                        </scripting:script>
+                    </scripting:transformer>
+                    <logger message="TRITON-CHANNEL: #[sessionVars['TRITON-CHANNEL']] / TRITON-PORT: #[sessionVars['TRITON-PORT']] / Payload: #[payload:]" level="INFO" doc:name="Logger-Channel-Port"/>
+                    <flow-ref name="AuthenticateWithApiKey" doc:name="Authenticate With ApiKey"/>
+                    <choice doc:name="Choice">
+                        <when expression="payload==false">
+                            <processor-chain>
+                                <scripting:transformer doc:name="Return Error payload">
+                                    <scripting:script engine="Groovy">
+                                        <scripting:text><![CDATA[errorPayloadstr = '<?xml version="1.0" standalone="yes"?><Auth><AS400>Active</AS400><ApiKey>foobarfoobarfoobar</ApiKey><Status>0</Status><Error>Invalid ApiKey</Error><Token></Token></Auth>'
+return errorPayloadstr]]></scripting:text>
+                                    </scripting:script>
+                                </scripting:transformer>
+                                <logger message="FailingAuthXMLResponse (apikey branch): #[payload:]" level="INFO" doc:name="Logger-FailingAuthXMLResponse-Apikey"/>
+                            </processor-chain>
+                        </when>
+                        <otherwise>
+                            <processor-chain>
+                                <vm:outbound-endpoint exchange-pattern="request-response" path="triton.stub.Q.1" doc:name="VM-mule-triton"/>
+                                <logger message="TritonStubResponse: #[payload:]" level="INFO" doc:name="Logger-TritonStubResponse"/>
+                            </processor-chain>
+                        </otherwise>
+                    </choice>
+                </processor-chain>
+            </when>
+            <when expression="message.inboundProperties['token'] !='' &amp;&amp; message.inboundProperties['apikey'] == null">
+                <processor-chain>
+                    <logger message="IN TOKEN Branch: #[payload:]" level="INFO" doc:name="Logger-TOKEN-passed"/>
+                    <scripting:transformer doc:name="Add-Channel-Port-Session-Props-return-token">
+                        <scripting:script engine="Groovy">
+                            <scripting:text><![CDATA[sessionVars['TRITON-CHANNEL']=message.getInboundProperty('channel')
+if (sessionVars['TRITON-CHANNEL']=='M')
+	sessionVars['TRITON-PORT']=${triton.moorings.port}
+else {
+	if (sessionVars['TRITON-CHANNEL']=='S')
+		sessionVars['TRITON-PORT']=${triton.sunsail.port}
+	else
+		sessionVars['TRITON-PORT']=0
+}
+return message.getInboundProperty('token')]]></scripting:text>
+                        </scripting:script>
+                    </scripting:transformer>
+                    <logger message="TRITON-CHANNEL: #[sessionVars['TRITON-CHANNEL']] / TRITON-PORT: #[sessionVars['TRITON-PORT']] / Payload: #[payload:]" level="INFO" doc:name="Logger-Channel-Port"/>
+                    <flow-ref name="AuthenticateWithToken" doc:name="Authenticate with Token"/>
+                    <choice doc:name="Choice">
+                        <when expression="payload==false">
+                            <processor-chain>
+                                <scripting:transformer doc:name="Return Error payload">
+                                    <scripting:script engine="Groovy">
+                                        <scripting:text><![CDATA[errorPayloadstr = '<?xml version="1.0" standalone="yes"?><Auth><AS400>Active</AS400><ApiKey>foobarfoobarfoobar</ApiKey><Status>0</Status><Error>Invalid ApiKey</Error><Token></Token></Auth>'
+return errorPayloadstr]]></scripting:text>
+                                    </scripting:script>
+                                </scripting:transformer>
+                                <logger message="FailingAuthXMLResponse (Token branch): #[payload:]" level="INFO" doc:name="Logger-FailingAuthXMLResponse-Token"/>
+                            </processor-chain>
+                        </when>
+                        <otherwise>
+                            <processor-chain>
+                                <scripting:transformer doc:name="ParseArgsOneMoreTime">
+                                    <scripting:script engine="Groovy">
+                                        <scripting:text><![CDATA[// remove a few vars from the args String
+		// apikey, token & channel
+		
+		tmp = message.getSessionProperty('API-METHOD-ARGS')
+		//println 'tmp: ' + tmp
+		
+		// split args by &
+		// and ignore the ? (first character)
+		argsArr = tmp[1..-1].split('&')
+		//println 'argsArr: ' + argsArr
+		// e.g.  msgArr: [token=838481, channel=S, brand=B]
+		tmp2='?'
+		for ( foo in argsArr ) {
+			// split by '='
+			argsArr2 = foo.split('=')
+			//println 'element name: ' + argsArr2[0]
+		    if ( (argsArr2[0].trim()!='apikey') && (argsArr2[0].trim()!='token') && (argsArr2[0].trim()!='channel') ) {
+				// element is not api'key', not 'token', not 'channel'
+				tmp2 = tmp2 + foo + '&'
+			}
+		}
+		//println 'tmp2: ' + tmp2
+		if (tmp2.length() > 1) {
+			message.setSessionProperty('API-METHOD-ARGS', tmp2[0..-2])
+		}
+		println "sessionVars['API-METHOD-ARGS'] was updated to: " + sessionVars['API-METHOD-ARGS']
+		return  payload]]></scripting:text>
+                                    </scripting:script>
+                                </scripting:transformer>
+                                <logger message="Updated API-METHOD-ARGS: #[groovy:message.getSessionProperty('API-METHOD-ARGS')]" level="INFO" doc:name="Confirm Updated Session Prop (API-METHOD-ARGS')"/>
+                                <vm:outbound-endpoint exchange-pattern="request-response" path="triton.stub.Q.2" doc:name="VM-mule-triton"/>
+                                <logger message="TritonStubResponse: #[payload:]" level="INFO" doc:name="Logger-TritonStubResponse"/>
+                            </processor-chain>
+                        </otherwise>
+                    </choice>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <flow-ref name="InvalidAuthentication" doc:name="InvalidAuthentication"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+        <object-to-string-transformer doc:name="Object to String"/>
+    </flow>
+    <flow name="AuthenticateWithApiKey" doc:name="AuthenticateWithApiKey">
+        <logger message="Payload Entering AuthenticateWithApiKey flow: #[payload:]" level="INFO" doc:name="Logger"/>
+        <mongo:find-one-object-using-query-map config-ref="MongoDB-CloudConnector" collection="authentication" username="admin" password="admin" doc:name="MongoDB-find-apikey">
+            <mongo:query-attributes>
+                <mongo:query-attribute key="apikey">#[payload:]</mongo:query-attribute>
+            </mongo:query-attributes>
+        </mongo:find-one-object-using-query-map>
+        <choice doc:name="Choice">
+            <when expression="payload != null">
+                <processor-chain>
+                    <logger message="Found ApiKey in Cache was successful, new payload: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <scripting:transformer doc:name="Set-tritonLoginArgs">
+                        <scripting:script engine="Groovy">
+                            <scripting:text><![CDATA[// overwrite the public URL Args with the private ones (triton compatible)
+tritonLoginArgs = "?Username=" + payload.username.value + "&Password=" + payload.password.value + "&ApiKey=" + payload.apikey.value
+return tritonLoginArgs]]></scripting:text>
+                        </scripting:script>
+                    </scripting:transformer>
+                    <logger message="Authenticate OK w APIKEY: #[payload:]" level="INFO" doc:name="Logger-Auth-Success-w-Apikey"/>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <object-to-string-transformer doc:name="Object to String"/>
+                    <logger message="No Auth Object returned: #[payload:]" level="INFO" doc:name="Auth Failed Logger"/>
+                    <expression-transformer evaluator="groovy" expression="false" doc:name="Expression"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <logger message="Exception: Could not connect to MongoDB  (Auth by ApiKey)" level="INFO" doc:name="Logger"/>
+            <expression-transformer evaluator="groovy" expression="false" doc:name="FALSE"/>
+        </catch-exception-strategy>
+    </flow>
+    <flow name="AuthenticateWithToken" doc:name="AuthenticateWithToken">
+        <logger message="Inside Flow AuthenticateWithToken, payload: #[payload:]" level="INFO" doc:name="Logger"/>
+        <mongo:find-one-object-using-query-map config-ref="MongoDB-CloudConnector" collection="authentication" username="admin" password="admin" doc:name="MongoDB-find-apikey">
+            <mongo:query-attributes>
+                <mongo:query-attribute key="pseudocode">#[payload:]</mongo:query-attribute>
+            </mongo:query-attributes>
+        </mongo:find-one-object-using-query-map>
+        <choice doc:name="Choice">
+            <when expression="payload!=null">
+                <processor-chain>
+                    <logger message="Auth Object returned: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <scripting:transformer doc:name="GetChannel-SetPort">
+                        <scripting:script engine="Groovy">
+                            <scripting:text><![CDATA[// get the channel S or M from the auth cache
+// in case it's not passed by subsequent calls
+// this call handles both situations
+
+// if sessionVars['TRITON-CHANNEL'] was not already set
+if (sessionVars['TRITON-CHANNEL']!=null) {
+	// read it from the DBObject returned from mongodb
+	sessionVars['TRITON-CHANNEL']=payload.channel.value
+	// note: the channel value is not set when the cache data is being loaded
+    // from webwumst.csv
+	// Umair to provide that data, and Data Mapper (DM) map must be updated accordingly
+	// currently the channel field gets an empty string from the DM
+}
+
+if (sessionVars['TRITON-CHANNEL']=='M')
+	sessionVars['TRITON-PORT']=${triton.moorings.port}
+else {
+	if (sessionVars['TRITON-CHANNEL']=='S')
+		sessionVars['TRITON-PORT']=${triton.sunsail.port}
+	else {
+		sessionVars['TRITON-PORT']=0
+		println "Alert: TRITON-PORT = 0"
+		// may be the default should be the moorings port?
+	}
+}
+
+
+// set a session prop
+return payload]]></scripting:text>
+                        </scripting:script>
+                    </scripting:transformer>
+                    <expression-transformer expression="#[header:session:API-METHOD-ARGS]" doc:name="Only-Args"/>
+                    <logger message="Authenticate OK w TOKEN: #[payload:]" level="INFO" doc:name="Logger-Auth-Success-w-Token"/>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <object-to-string-transformer doc:name="Object to String"/>
+                    <logger message="No Auth Object returned: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <expression-transformer evaluator="groovy" expression="false" doc:name="Expression"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+        <logger message="In flow testCacheAvailability: Is Cache Available: #[payload:]" level="INFO" doc:name="true/false Logger"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <logger message="Exception: Could not connect to MongoDB (Auth by Token)" level="INFO" doc:name="Logger"/>
+            <expression-transformer expression="false" doc:name="FALSE"/>
+        </catch-exception-strategy>
+    </flow>
+    <flow name="InvalidAuthentication" doc:name="InvalidAuthentication">
+        <logger message="InvalidAuthentication Authentication: both apikey and token missing or passed simultaneously" level="INFO" doc:name="space holder Logger"/>
+        <scripting:transformer doc:name="returning default invalid authentication XML payload">
+            <scripting:script engine="Groovy">
+                <scripting:text><![CDATA[resp = '<?xml version="1.0" encoding="UTF-8"?><FoobarMethod><Error>Invalid Authentication: missing apikey or missing token or both apikey and token were passed in the request. Contact TUI Marine Technical support.</Error></FoobarMethod>'
+return resp]]></scripting:text>
+            </scripting:script>
+        </scripting:transformer>
+    </flow>
+    <flow name="ErrorHandling" doc:name="ErrorHandling" processingStrategy="synchronous">
+        <logger message="Inside Error Handling..." level="INFO" doc:name="Logger"/>
+        <expression-transformer expression="false" doc:name="FALSE"/>
+    </flow>
+    <flow name="mule-triton-stub-1-authenticate-call" doc:name="mule-triton-stub-1-authenticate-call" doc:description="This is only a STUB when testing outside of the TUI VPN. Remove this flow.">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="triton.stub.Q.1" doc:name="VM"/>
+        <logger message="Connect here to Mule-triton for method: #[sessionVars['API-METHOD']]" level="INFO" doc:name="Stub-Interface-to-Mule-Triton"/>
+        <scripting:transformer doc:name="Simulate Triton Response (stub1)">
+            <scripting:script engine="Groovy">
+                <scripting:text><![CDATA[resp = '<?xml version="1.0" encoding="UTF-8"?><Auth><AS400>Active</AS400><ApiKey>z2pVJjtm2nHFvX/t1B4GrQ==</ApiKey><Status>1</Status><Error/><Token>327352</Token></Auth>'
+return resp]]></scripting:text>
+            </scripting:script>
+        </scripting:transformer>
+    </flow>
+    <flow name="mule-triton-stub-2-subsequent-calls" doc:name="mule-triton-stub-2-subsequent-calls" doc:description="This is only a STUB when testing outside of the TUI VPN. Remove this flow.">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="triton.stub.Q.2" doc:name="VM"/>
+        <logger message="Connect here to Mule-triton for method: #[sessionVars['API-METHOD']]" level="INFO" doc:name="Stub-Interface-to-Mule-Triton"/>
+        <scripting:transformer doc:name="Simulate Triton Response (stub2)">
+            <scripting:script engine="Groovy">
+                <scripting:text><![CDATA[methodInvoked = sessionVars['API-METHOD']
+resp = '<?xml version="1.0" encoding="UTF-8"?><AS400>Active</AS400><FakePayloadFor' + methodInvoked +'>blahblah</FakePayloadFor' + methodInvoked +'><Error/>'
+return resp]]></scripting:text>
+            </scripting:script>
+        </scripting:transformer>
+    </flow>
+    <flow name="triton_main_vm_flow" doc:name="triton_main_vm_flow">
+        <vm:outbound-endpoint exchange-pattern="request-response" path="tritonQ" doc:name="VM"/>
+        <logger message="Inside tritonQ: #[payload:]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="sessionVars['API-CLASS']=='STATUS'">
+                <processor-chain>
+                    <vm:outbound-endpoint exchange-pattern="request-response" path="STATUS" responseTimeout="10000" mimeType="text/plain" doc:name="Class_STATUS"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-CLASS']=='LOGIN'">
+                <processor-chain>
+                    <vm:outbound-endpoint exchange-pattern="request-response" path="LOGIN" responseTimeout="10000" mimeType="text/plain" doc:name="Class_LOGIN"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-CLASS']=='CACHE'">
+                <processor-chain>
+                    <flow-ref name="testCacheAvailability" doc:name="test-cache-availability"/>
+                    <choice doc:name="Choice">
+                        <when expression="payload==true">
+                            <processor-chain>
+                                <expression-transformer expression="#[header:session:API-METHOD-ARGS]" doc:name="Only Args"/>
+                                <vm:outbound-endpoint exchange-pattern="request-response" path="CACHE" doc:name="Class_CACHE"/>
+                            </processor-chain>
+                        </when>
+                        <otherwise>
+                            <processor-chain>
+                                <expression-transformer expression="#[header:session:API-METHOD-ARGS]" doc:name="Only Args"/>
+                                <vm:outbound-endpoint exchange-pattern="request-response" path="SEARCH" doc:name="Class_SEARCH"/>
+                            </processor-chain>
+                        </otherwise>
+                    </choice>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-CLASS']=='SEARCH'">
+                <processor-chain>
+                    <vm:outbound-endpoint exchange-pattern="request-response" path="SEARCH" responseTimeout="10000" mimeType="text/plain" doc:name="Class_SEARCH"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-CLASS']=='BOOKING'">
+                <processor-chain>
+                    <vm:outbound-endpoint exchange-pattern="request-response" path="BOOKING" responseTimeout="10000" mimeType="text/plain" doc:name="Class_BOOKING"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-CLASS']=='PROFILE'">
+                <processor-chain>
+                    <vm:outbound-endpoint exchange-pattern="request-response" path="PROFILE" responseTimeout="10000" mimeType="text/plain" doc:name="Class_PROFILE"/>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <logger message="In Main Flow, INVALID CLASS Name: #[groovy:message.getSessionProperty('API-CLASS')]" level="INFO" doc:name="Logger"/>
+                    <vm:outbound-endpoint exchange-pattern="one-way" path="DLQ" responseTimeout="10000" mimeType="text/plain" doc:name="DLQ"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="Class_STATUS_flow" doc:name="Class_STATUS_flow">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="STATUS" responseTimeout="10000" mimeType="text/plain" doc:name="VM"/>
+        <logger message="In STATUS flow: #[payload:]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="sessionVars['API-METHOD']=='GetStatus'">
+                <processor-chain>
+                    <scripting:transformer doc:name="Remove Args">
+                        <scripting:script engine="Groovy">
+                            <scripting:text><![CDATA[return null]]></scripting:text>
+                        </scripting:script>
+                    </scripting:transformer>
+                    <logger message="INVOKING SETUP.GetStatus with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLAS400.PGM" contentType="text/html" doc:name="STATUS.GetStatus"/>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <logger message="In STATUS CLASS Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" level="INFO" doc:name="Logger"/>
+                    <vm:outbound-endpoint exchange-pattern="one-way" path="DLQ" responseTimeout="10000" mimeType="text/plain" doc:name="VM-DLQ"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="Class_LOGIN_flow" doc:name="Class_LOGIN_flow">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="LOGIN" responseTimeout="10000" mimeType="text/plain" doc:name="VM"/>
+        <logger message="In LOGIN flow: #[payload:]" level="INFO" doc:name="Logger"/>
+        <transformer ref="ONLY-API-METHOD-ARGS" doc:name="OnlyArgs"/>
+        <choice doc:name="Choice">
+            <when expression="sessionVars['API-METHOD']=='AuthenticateBroker'">
+                <processor-chain>
+                    <logger message="INVOKING LOGIN.AuthenticateBroker with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLBRKVLD.PGM/#[payload:]" contentType="text/html" doc:name="LOGIN.AuthenticateBroker"/>
+                    <object-to-string-transformer doc:name="Object to String"/>
+                    <logger message="RESPONSE from AuthenticatedBroker: #[payload:]" level="INFO" doc:name="Response Payload Logger"/>
+                    <message-properties-transformer doc:name="Message Properties">
+                        <add-message-property key="AUTH-STATUS" value="#[xpath:/Auth/Status]"/>
+                    </message-properties-transformer>
+                    <logger message="AUTHENTICATION STATUS: #[message.outboundProperties['AUTH-STATUS']]" level="INFO" doc:name="Auth Status Logger"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='AuthenticateUser'">
+                <processor-chain>
+                    <logger message="INVOKING LOGIN.AuthenticateUser with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLUSERDV1.PGM/#[payload:]" contentType="text/html" doc:name="LOGIN.AuthenticateUser"/>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <logger message="In LOGIN CLASS Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" level="INFO" doc:name="Logger"/>
+                    <vm:outbound-endpoint exchange-pattern="one-way" path="DLQ" responseTimeout="10000" mimeType="text/plain" doc:name="VM-DLQ"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="Class_CACHE_flow" doc:name="Class_CACHE_flow">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="CACHE" responseTimeout="10000" mimeType="text/plain" doc:name="VM"/>
+        <logger message="In CACHE flow: #[payload:]" level="INFO" doc:name="Logger"/>
+        <transformer ref="ONLY-API-METHOD-ARGS" doc:name="OnlyArgs"/>
+        <scripting:transformer doc:name="KVP_to_JSONquery">
+            <scripting:script engine="Groovy">
+                <scripting:text><![CDATA[/* continue implementation
+generate a map from the list of Args
+ ?k1=v1&k2=v2&k3=v3 into 
+
+ def argmap = [k1:v1,
+                 k2:v2,
+                 k3:v3,
+                 ...]
+
+see: http://blog.adaptivesoftware.biz/2009/04/groovy-maps.html
+*/
+// for now...
+return payload]]></scripting:text>
+            </scripting:script>
+        </scripting:transformer>
+        <choice doc:name="Choice">
+            <when expression="sessionVars['API-METHOD']=='GetBases'">
+                <processor-chain>
+                    <logger message="INVOKING CACHE.GetBases with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <mongo:find-one-object config-ref="MongoDB-CloudConnector" collection="bases" query-ref="#[payload:]" username="admin" password="admin" doc:name="CACHE.GetBases">
+                        <mongo:fields ref="#[payload]"/>
+                    </mongo:find-one-object>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetBoats'">
+                <processor-chain>
+                    <logger message="INVOKING CACHE.GetBoats with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <mongo:find-one-object config-ref="MongoDB-CloudConnector" collection="boats" query-ref="#[payload:]" username="admin" password="admin" doc:name="CACHE.GetBoats">
+                        <mongo:fields ref="#[payload]"/>
+                    </mongo:find-one-object>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetAvailBoats'">
+                <processor-chain>
+                    <logger message="INVOKING CACHE.GetAvailBoats with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <mongo:find-one-object config-ref="MongoDB-CloudConnector" collection="availability" query-ref="#[payload:]" username="admin" password="admin" doc:name="CACHE.GetAvailBoats">
+                        <mongo:fields ref="#[payload]"/>
+                    </mongo:find-one-object>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetRate'">
+                <processor-chain>
+                    <logger message="INVOKING CACHE.GetRate with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <mongo:find-one-object config-ref="MongoDB-CloudConnector" collection="availability" query-ref="#[payload:]" username="admin" password="admin" doc:name="GetRates (not yet)">
+                        <mongo:fields ref="#[payload]"/>
+                    </mongo:find-one-object>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <logger message="In CACHE CLASS Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" level="INFO" doc:name="Logger"/>
+                    <vm:outbound-endpoint exchange-pattern="one-way" path="DLQ" responseTimeout="10000" mimeType="text/plain" doc:name="VM-DLQ"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="Class_SEARCH_flow" doc:name="Class_SEARCH_flow">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="SEARCH" responseTimeout="10000" mimeType="text/plain" doc:name="VM"/>
+        <logger message="In SEARCH flow: #[payload:]" level="INFO" doc:name="Logger"/>
+        <transformer ref="ONLY-API-METHOD-ARGS" doc:name="OnlyArgs"/>        
+        <choice doc:name="Choice">
+            <when expression="sessionVars['API-METHOD']=='GetBases'">
+                <processor-chain>
+                    <logger message="INVOKING SEARCH.GetBases with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/xmlbases.pgm/#[payload:]" encoding="UTF-8" mimeType="text/xml" doc:name="SEARCH.GetBases"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetBoats'">
+                <processor-chain>
+                    <logger message="INVOKING SEARCH.GetBoats with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLFULLST.pgm/#[payload:]" encoding="UTF-8" mimeType="text/xml" doc:name="SEARCH.GetBoats"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetContractHistory'">
+                <processor-chain>
+                    <logger message="INVOKING SEARCH.ContractHistory with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLHSCLNV1.pgm/#[payload:]" doc:name="SEARCH.GetContractHistory"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetAvailBoats'">
+                <processor-chain>
+                    <logger message="INVOKING SEARCH.GetAvailBoats with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLTYPESV1.pgm/#[payload:]" doc:name="SEARCH.GetAvailBoats"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetRate'">
+                <processor-chain>
+                    <logger message="INVOKING SEARCH.GetRate with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPARMSV1.pgm/#[payload:]" doc:name="SEARCH.GetRate"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetFlightRoute'">
+                <processor-chain>
+                    <logger message="INVOKING SEARCH.GetFlightRoute with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:1093/findform1/XMLROUTE.pgm/#[payload:]" doc:name="SEARCH.GetFlightRoute" doc:description="for SUNSAIL only, port is 1093"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetFlight'">
+                <processor-chain>
+                    <logger message="INVOKING SEARCH.GetFlight with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLFLAVL.pgm/#[payload:]" doc:name="SEARCH.GetFlight" doc:description="for SUNSAIL only port is 1093"/>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <logger message="In SEARCH CLASS Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" level="INFO" doc:name="Logger"/>
+                    <vm:outbound-endpoint exchange-pattern="one-way" path="DLQ" responseTimeout="10000" mimeType="text/plain" doc:name="VM-DLQ"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="Class_BOOKING_flow" doc:name="Class_BOOKING_flow">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="BOOKING" responseTimeout="10000" mimeType="text/plain" doc:name="VM"/>
+        <logger message="In BOOKING flow: #[payload:]" level="INFO" doc:name="Logger"/>
+        <transformer ref="ONLY-API-METHOD-ARGS" doc:name="OnlyArgs"/>
+        <choice doc:name="Choice">
+            <when expression="sessionVars['API-METHOD']=='CreateQuote'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.CreateQuote with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/xmlquotev1.pgm/#[payload:]" encoding="UTF-8" mimeType="text/xml" doc:name="BOOKING.CreateQuote"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetQuoteHistorySaved'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.GetQuoteHistorySaved with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLQTCLNV1.pgm/#[payload:]" encoding="UTF-8" mimeType="text/xml" doc:name="BOOKING.GetQuoteHistorySaved"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetQuoteHistory'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.GetQuoteHistory with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLQCCLN.pgm/#[payload:]" doc:name="BOOKING.GetQuoteHistory"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetQuote'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.GetQuote with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLQTENQV1.pgm/#[payload:]" doc:name="BOOKING.GetQuote"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetCallCenterQuote'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.GetCallCenterQuote with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLCCENQ.pgm/#[payload:]" doc:name="BOOKING.GetCallCenterQuote"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetContractQuote'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.GetContractQuote with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLCNTENQV1.pgm/#[payload:]" doc:name="BOOKING.GetContractQuote"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='SaveQuote'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.SaveQuote with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLQTSAV.pgm/#[payload:]" doc:name="BOOKING.SaveQuote"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetPrices'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.GetPrices with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPARMSV1.pgm/#[payload:]" doc:name="BOOKING.GetPrices"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetInsurPackages'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.GetInsurPackages with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLINSUR.pgm/#[payload:]" doc:name="BOOKING.GetInsurPackages"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='GetAncillaryProducts'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.GetAncillaryProducts with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPRODSV1.pgm/#[payload:]" doc:name="BOOKING.GetAncillaryProducts"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='AddFlightPassenger'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.AddFlightPassenger with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPAINFO.pgm/#[payload:]" doc:name="BOOKING.AddFlightPassenger"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='CreateOption'">
+                <processor-chain>
+                    <logger message="INVOKING BOOKING.CreateOption with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLBRKOP.pgm/#[payload:]" doc:name="BOOKING.CreateOption"/>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <logger message="In BOOKING CLASS Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" level="INFO" doc:name="Logger"/>
+                    <vm:outbound-endpoint exchange-pattern="one-way" path="DLQ" responseTimeout="10000" mimeType="text/plain" doc:name="VM-DLQ"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="Class_PROFILE_flow" doc:name="Class_PROFILE_flow">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="PROFILE" responseTimeout="10000" mimeType="text/plain" doc:name="VM"/>
+        <logger message="In PROFILE flow: #[payload:]" level="INFO" doc:name="Logger"/>
+        <transformer ref="ONLY-API-METHOD-ARGS" doc:name="OnlyArgs"/>
+        <choice doc:name="Choice">
+            <when expression="sessionVars['API-METHOD']=='UpdateUserProfile'">
+                <processor-chain>
+                    <logger message="INVOKING PROFILE.UpdateUserProfile with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLCUSERV1.pgm/#[payload:]" encoding="UTF-8" mimeType="text/xml" doc:name="PROFILE.UpdateUserProfile"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='CreateUserProfile'">
+                <processor-chain>
+                    <logger message="INVOKING PROFILE.CreateUserProfile with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLNUSERV1.pgm/#[payload:]" encoding="UTF-8" mimeType="text/xml" doc:name="PROFILE.CreateUserProfile"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='ChangeUserPassword'">
+                <processor-chain>
+                    <logger message="INVOKING PROFILE.ChangeUserPassword with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPWCHG.pgm/#[payload:]" doc:name="PROFILE.ChangeUserPassword"/>
+                </processor-chain>
+            </when>
+            <when expression="sessionVars['API-METHOD']=='RetrieveUserPassword'">
+                <processor-chain>
+                    <logger message="INVOKING PROFILE.RetrieveUserPassword with ARGS: #[payload:]" level="INFO" doc:name="Logger"/>
+                    <http:outbound-endpoint exchange-pattern="request-response" method="GET" address="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPWORDV1.pgm/#[payload:]" doc:name="PROFILE.RetrieveUserPassword"/>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <logger message="In SEARCH PROFILE Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" level="INFO" doc:name="Logger"/>
+                    <vm:outbound-endpoint exchange-pattern="one-way" path="DLQ" responseTimeout="10000" mimeType="text/plain" doc:name="VM-DLQ"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="testCacheAvailability" doc:name="testCacheAvailability">
+        <mongo:find-objects-using-query-map config-ref="MongoDB-CloudConnector" collection="${mongodb.cache.collection.name}" username="${mongodb.username}" password="${mongodb.password}" doc:name="Mongo DB">
+            <mongo:query-attributes>
+                <mongo:query-attribute key="${mongodb.cache.check.key}">${mongodb.cache.check.value}</mongo:query-attribute>
+            </mongo:query-attributes>
+        </mongo:find-objects-using-query-map>
+        <choice doc:name="Choice">
+            <when expression="payload.iterator().hasNext()">
+                <processor-chain>
+                    <logger message="Cache content is valid and returns one or more object from 'availability' collection" level="INFO" doc:name="Logger"/>
+                    <expression-transformer evaluator="groovy" expression="true" doc:name="Expression"/>
+                </processor-chain>
+            </when>
+            <otherwise>
+                <processor-chain>
+                    <logger message="Cache content is invalid. Unknown or empty 'availability' collection" level="INFO" doc:name="Logger"/>
+                    <expression-transformer evaluator="groovy" expression="false" doc:name="Expression"/>
+                </processor-chain>
+            </otherwise>
+        </choice>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <logger message="Could not connect to MongoDB" level="INFO" doc:name="Logger"/>
+            <expression-transformer evaluator="groovy" expression="false" doc:name="FALSE"/>
+        </catch-exception-strategy>
+    </flow>
+    <flow name="DeadLetterQueue_flow" doc:name="DeadLetterQueue_flow">
+        <vm:inbound-endpoint exchange-pattern="one-way" path="DLQ" responseTimeout="10000" mimeType="text/plain" doc:name="DLQ"/>
+        <logger message="Inside DLQ flow: #[payload:]" level="INFO" doc:name="Logger"/>
+        <file:outbound-endpoint path="${app.name}/DLQ" responseTimeout="10000" doc:name="File-DLQ"/>
+    </flow>
+</mule>

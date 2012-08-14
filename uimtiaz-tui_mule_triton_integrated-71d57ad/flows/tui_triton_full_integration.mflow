@@ -1,0 +1,2969 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<mule-configuration xmlns="http://www.mulesoft.com/tooling/messageflow" name="main">
+    <global-element type="http://www.springframework.org/schema/context/property-placeholder" name="Property Placeholder" entity-id="8cc76109-d19b-4d5a-9d86-7d92cb9d3b0f">
+        <properties>
+            <property value="classpath:mule-app-default.properties,classpath:mule-app-${env}.properties" name="location"/>
+        </properties>
+    </global-element>
+    <global-element type="http://www.mulesoft.org/schema/mule/mongo/config" name="MongoDB-CloudConnector" entity-id="8c2d7411-4c3d-42ad-96d6-03e0789e9e57">
+        <properties>
+            <property value="MongoDB-CloudConnector" name="name"/>
+            <property name="username"/>
+            <property name="password"/>
+            <property name="host"/>
+            <property name="port"/>
+            <property value="TuiMarine" name="database"/>
+            <property name="connectTimeout"/>
+            <property name="connectionsPerHost"/>
+            <property name="maxWaitTime"/>
+            <property name="socketTimeout"/>
+            <property name="threadsAllowedToBlockForConnectionMultiplier"/>
+            <property name="w"/>
+            <property name="wtimeout"/>
+            <property name="autoConnectRetry"/>
+            <property name="fsync"/>
+            <property name="safe"/>
+            <property name="slaveOk"/>
+        </properties>
+    </global-element>
+    <global-element type="http://www.mulesoft.org/schema/mule/core/message-properties-transformer" name="Message_Properties" entity-id="d6e18afc-2b02-4e6f-b1bc-c52b797a9432">
+        <properties>
+            <property name="returnClass"/>
+            <property name="ignoreBadInput"/>
+            <property name="encoding"/>
+            <property name="mimeType"/>
+            <property name="overwrite"/>
+            <property name="scope"/>
+            <property value="text-to-html-msgPropTransformer" name="name"/>
+            <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;0">
+                <property value="text/html" name="value"/>
+                <property value="Content-Type" name="key"/>
+            </property-collection>
+        </properties>
+    </global-element>
+    <global-element type="http://www.mulesoft.org/schema/mule/core/catch-exception-strategy" name="Catch Exception Strategy" entity-id="da402ac1-33ad-458a-b753-a01aeceb35fe">
+        <properties>
+            <property value="Default_Exception_Strategy" name="name"/>
+            <property name=""/>
+            <property name="when"/>
+            <property name="enableNotifications"/>
+        </properties>
+        <compartment>
+            <lane hadOnlyOneElement="false" entity-id="0e047f76-3b01-45a5-b646-d3e105182267">
+                <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Default Exception Logger" entity-id="e42a8b76-854f-4713-8456-e9ed524160f1">
+                    <properties>
+                        <property value="DEFAULT EXCEPTION STRATEGY: #[groovy:message.exceptionPayload]" name="message"/>
+                        <property value="INFO" name="level"/>
+                        <property name="category"/>
+                    </properties>
+                </pattern>
+                <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="DLQ" entity-id="58026007-dfcd-49d4-a66c-d2e2a9fe4a8f">
+                    <properties>
+                        <property value="one-way" name="exchange-pattern"/>
+                        <property value="one-way" name="exchange-pattern"/>
+                        <property value="DLQ" name="path"/>
+                        <property name="businessEventsLabel"/>
+                        <property name="tracking:enable-default-events"/>
+                        <property name="address"/>
+                        <property name="responseTimeout"/>
+                        <property name="encoding"/>
+                        <property name="disableTransportTransformer"/>
+                        <property name="mimeType"/>
+                        <property name="connector-ref"/>
+                        <property name="ref"/>
+                        <property name="transformer-refs"/>
+                        <property name="responseTransformer-refs"/>
+                    </properties>
+                </endpoint>
+            </lane>
+        </compartment>
+    </global-element>
+    <global-element type="http://www.mulesoft.org/schema/mule/core/configuration" name="Configuration" entity-id="ebf200c7-6bc8-4798-a9e4-ad21d3264a12">
+        <properties>
+            <property value="Default_Exception_Strategy" name="defaultExceptionStrategy-ref"/>
+        </properties>
+    </global-element>
+    <global-element type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="ONLY-API-METHOD-ARGS" entity-id="823cbd88-7d75-4b6a-b4c8-f2753d8696f8">
+        <properties>
+            <property name="returnClass"/>
+            <property name="ignoreBadInput"/>
+            <property name="encoding"/>
+            <property name="mimeType"/>
+            <property name="evaluator"/>
+            <property value="#[header:session:API-METHOD-ARGS]" name="expression"/>
+            <property name="custom-evaluator"/>
+            <property value="ONLY-API-METHOD-ARGS" name="name"/>
+            <property name="returnSourceIfNull"/>
+            <property value="ONLY-API-METHOD-ARGS" name="name"/>
+        </properties>
+    </global-element>
+    <flow SubFlow="false" name="tui_mule_auth">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="8b05c46f-66e4-47ae-a41b-acb0ca03c2ff">
+            <endpoint message-exchange-pattern="OneWay" direction="Inbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="HTTP" entity-id="1ba6dba6-55a6-4d4d-bdbb-0ad6e912f8b0">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="request-response" name="exchange-pattern"/>
+                    <property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+                    <property name="httpLabel"/>
+                    <property value="localhost" name="host"/>
+                    <property value="8081" name="port"/>
+                    <property value="api" name="path"/>
+                    <property name="method"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property name="mimeType"/>
+                    <property name="responseTimeout"/>
+                    <property name="followRedirects"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                    <property name="user"/>
+                    <property name="password"/>
+                    <property name="contentType"/>
+                    <property name="keep-alive"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="QRY Params Logger" entity-id="6f52dcd7-bb92-4ebe-bae5-b1dc056e0407">
+                <properties>
+                    <property value="QUERY PARAMS: #[headers:INBOUND:*]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+                <description>will http.cookie show up here if cookie is sent to flow?</description>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Log Inbound Payload" entity-id="b32ee091-be5d-4693-85e7-38d2ca20ae27">
+                <properties>
+                    <property value="INBOUND PAYLOAD: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="Set Session Props" entity-id="15eb3480-9efb-4ab2-8314-07ac16e33f7b">
+                <properties>
+                    <property name="returnClass"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mimeType"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                        <property value="// ignore the first /&#xA;// and split by / the rest of the message&#xA;msgArr = payload[1..-1].split('/')&#xA;//println 'msgArr: ' + msgArr&#xA;&#xA;// msgArr[0] should always contain: 'api'&#xA;if (msgArr[0]=='api') {&#xA;&#x9;message.setSessionProperty('API-VALID', true)&#xA;    // Error handling: test that msgArr[n] is not null&#xA;&#x9;message.setSessionProperty('API-CLASS', msgArr[1])&#xA;&#x9;message.setSessionProperty('API-METHOD', msgArr[2]) &#xA;&#x9;message.setSessionProperty('API-METHOD-ARGS', msgArr[3])&#xA;&#x9;// remove /api/ at the front of the message&#xA;&#x9;return payload[5..-1]&#xA;}&#xA;else {&#xA;    // this is not a proper api invocation&#xA;&#x9;// set FALSE to ISVALID message property&#xA;&#x9;message.setSessionProperty('IS-VALID', false)&#xA;&#x9;message.setSessionProperty('API-CLASS', null)&#xA;&#x9;message.setSessionProperty('API-METHOD', null) &#xA;&#x9;message.setSessionProperty('API-METHOD-ARGS', null)&#xA;    return  payload&#xA;}" name="text"/>
+                        <property value="Groovy" name="engine"/>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Confirm Session Props" entity-id="99b77439-1843-4bfe-8696-96b0d324feaa">
+                <properties>
+                    <property value="INBOUND AFTER GROOVY: #[payload:]; API-VALID: #[groovy:message.getSessionProperty('API-VALID')];API-CLASS: #[groovy:message.getSessionProperty('API-CLASS')]; API-METHOD: #[groovy:message.getSessionProperty('API-METHOD')]; API-METHOD-ARGS: #[groovy:message.getSessionProperty('API-METHOD-ARGS')]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="org.mule.tooling.ui.modules.core.pattern.globalXformRef" name="OnlyArgs" entity-id="9c359daa-beff-4b9c-9ca3-2f3ea14603e1">
+                <properties>
+                    <property value="ONLY-API-METHOD-ARGS" name="ref"/>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="3bbef6b3-7aa7-445c-9f81-db0e05912d80">
+                <properties>
+                    <property-collection name="ca2cd56c-e06e-4834-bd08-e5074db5dfd7">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                    <property-collection name="7bfa16da-1d67-460e-8b7a-c0e018e4ab6b">
+                        <property value="message.inboundProperties['token'] !='' &amp;&amp; message.inboundProperties['apikey'] == null" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="9b268288-3f7f-4f19-b4da-a8638722aac8">
+                        <property value="message.inboundProperties['apikey'] !='' &amp;&amp; message.inboundProperties['token'] ==null" name="choice.expression"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="4f759a8f-b554-468f-b8d0-4056005be3ea"/>
+                <compartment entity-id="77bb03e5-2524-4bae-bf23-e5e6df31ed25">
+                    <lane hadOnlyOneElement="false" entity-id="9b268288-3f7f-4f19-b4da-a8638722aac8">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger-APIKEY-passed" entity-id="bbf21766-fc19-4053-b58e-f46282b6d64c">
+                            <properties>
+<property value="IN APIKEY Branch: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="Add-Channel-Port-Session-Props-return-apikey" entity-id="fa8c0d41-9418-4a7a-875e-298eae63f935">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+    <property value="sessionVars['TRITON-CHANNEL']=message.getInboundProperty('channel')&#xA;if (sessionVars['TRITON-CHANNEL']=='M')&#xA;&#x9;sessionVars['TRITON-PORT']=${triton.moorings.port}&#xA;else {&#xA;&#x9;if (sessionVars['TRITON-CHANNEL']=='S')&#xA;&#x9;&#x9;sessionVars['TRITON-PORT']=${triton.sunsail.port}&#xA;&#x9;else&#xA;&#x9;&#x9;sessionVars['TRITON-PORT']=0&#xA;}&#xA;return message.getInboundProperty('apikey')" name="text"/>
+    <property value="Groovy" name="engine"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger-Channel-Port" entity-id="ce592480-33af-4683-9ef4-ba57480a004b">
+                            <properties>
+<property value="TRITON-CHANNEL: #[sessionVars['TRITON-CHANNEL']] / TRITON-PORT: #[sessionVars['TRITON-PORT']] / Payload: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/flow-ref" name="Authenticate With ApiKey" entity-id="52b59893-b761-44e1-93c5-5fd55a9dfee4">
+                            <properties>
+<property value="AuthenticateWithApiKey" name="name"/>
+                            </properties>
+                        </pattern>
+                        <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="18ada5a1-3398-4a57-87a9-1cae56257456">
+                            <properties>
+<property-collection name="ccd3208c-3a08-467d-bc60-a1c7b18ac732">
+    <property value="payload==false" name="choice.expression"/>
+</property-collection>
+<property-collection name="d5e84052-31c1-4c05-b529-a2eb9b1a0563">
+    <property value="true" name="choice.otherwise"/>
+</property-collection>
+                            </properties>
+                            <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="6c3e96bc-229b-494e-b469-be13e637f214"/>
+                            <compartment entity-id="ad1fd515-743d-47e5-912f-3a25db758e02">
+<lane hadOnlyOneElement="false" entity-id="ccd3208c-3a08-467d-bc60-a1c7b18ac732">
+    <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="Return Error payload" entity-id="cfa7c58d-67ea-431f-801a-1134ce598aa3">
+        <properties>
+            <property name="returnClass"/>
+            <property name="ignoreBadInput"/>
+            <property name="encoding"/>
+            <property name="mimeType"/>
+            <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                <property value="errorPayloadstr = '&lt;?xml version=&quot;1.0&quot; standalone=&quot;yes&quot;?&gt;&lt;Auth&gt;&lt;AS400&gt;Active&lt;/AS400&gt;&lt;ApiKey&gt;foobarfoobarfoobar&lt;/ApiKey&gt;&lt;Status&gt;0&lt;/Status&gt;&lt;Error&gt;Invalid ApiKey&lt;/Error&gt;&lt;Token&gt;&lt;/Token&gt;&lt;/Auth&gt;'&#xA;return errorPayloadstr" name="text"/>
+                <property value="Groovy" name="engine"/>
+            </property-collection>
+        </properties>
+    </pattern>
+    <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger-FailingAuthXMLResponse-Apikey" entity-id="f4caf921-f991-495d-94d4-da7e946cd6bd">
+        <properties>
+            <property value="FailingAuthXMLResponse (apikey branch): #[payload:]" name="message"/>
+            <property value="INFO" name="level"/>
+            <property name="category"/>
+        </properties>
+    </pattern>
+</lane>
+<lane hadOnlyOneElement="false" entity-id="d5e84052-31c1-4c05-b529-a2eb9b1a0563">
+    <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM-mule-triton" entity-id="a0e87485-56aa-4953-a0fd-2d1203f7e1c5">
+        <properties>
+            <property value="one-way" name="exchange-pattern"/>
+            <property value="request-response" name="exchange-pattern"/>
+            <property value="triton.stub.Q.1" name="path"/>
+            <property name="businessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+            <property name="address"/>
+            <property name="responseTimeout"/>
+            <property name="encoding"/>
+            <property name="disableTransportTransformer"/>
+            <property name="mimeType"/>
+            <property name="connector-ref"/>
+            <property name="ref"/>
+            <property name="transformer-refs"/>
+            <property name="responseTransformer-refs"/>
+        </properties>
+    </endpoint>
+    <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger-TritonStubResponse" entity-id="4e287c9a-ea4f-4297-b1a5-83b22c92c03c">
+        <properties>
+            <property value="TritonStubResponse: #[payload:]" name="message"/>
+            <property value="INFO" name="level"/>
+            <property name="category"/>
+        </properties>
+    </pattern>
+</lane>
+                            </compartment>
+                        </splitter>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="7bfa16da-1d67-460e-8b7a-c0e018e4ab6b">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger-TOKEN-passed" entity-id="e0f8b411-1664-4c54-b666-3136be6bdda1">
+                            <properties>
+<property value="IN TOKEN Branch: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="Add-Channel-Port-Session-Props-return-token" entity-id="963239bb-7583-4470-b909-9a6e78efb62f">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+    <property value="sessionVars['TRITON-CHANNEL']=message.getInboundProperty('channel')&#xA;if (sessionVars['TRITON-CHANNEL']=='M')&#xA;&#x9;sessionVars['TRITON-PORT']=${triton.moorings.port}&#xA;else {&#xA;&#x9;if (sessionVars['TRITON-CHANNEL']=='S')&#xA;&#x9;&#x9;sessionVars['TRITON-PORT']=${triton.sunsail.port}&#xA;&#x9;else&#xA;&#x9;&#x9;sessionVars['TRITON-PORT']=0&#xA;}&#xA;return message.getInboundProperty('token')" name="text"/>
+    <property value="Groovy" name="engine"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger-Channel-Port" entity-id="aba38580-38a5-4b43-9c93-d9e4667541bc">
+                            <properties>
+<property value="TRITON-CHANNEL: #[sessionVars['TRITON-CHANNEL']] / TRITON-PORT: #[sessionVars['TRITON-PORT']] / Payload: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/flow-ref" name="Authenticate with Token" entity-id="af1a0edd-3bc4-4cd7-b0d9-471d8702c4d9">
+                            <properties>
+<property value="AuthenticateWithToken" name="name"/>
+                            </properties>
+                        </pattern>
+                        <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="53f56742-38e4-49cc-b7b1-8d0d33c7c068">
+                            <properties>
+<property-collection name="4b39e065-2a65-4c39-b7df-5884ea6bfd13">
+    <property value="payload==false" name="choice.expression"/>
+</property-collection>
+<property-collection name="cafc7476-bc63-49e9-a026-a3a3d2766f1a">
+    <property value="true" name="choice.otherwise"/>
+</property-collection>
+                            </properties>
+                            <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="01eed39c-ebc9-4696-b0aa-c83733643d6b"/>
+                            <compartment entity-id="170b947f-ba42-4cb3-b9b8-08a20ad91179">
+<lane hadOnlyOneElement="false" entity-id="4b39e065-2a65-4c39-b7df-5884ea6bfd13">
+    <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="Return Error payload" entity-id="2e0e20d1-13ab-413c-ac20-94dc5bcde316">
+        <properties>
+            <property name="returnClass"/>
+            <property name="ignoreBadInput"/>
+            <property name="encoding"/>
+            <property name="mimeType"/>
+            <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                <property value="errorPayloadstr = '&lt;?xml version=&quot;1.0&quot; standalone=&quot;yes&quot;?&gt;&lt;Auth&gt;&lt;AS400&gt;Active&lt;/AS400&gt;&lt;ApiKey&gt;foobarfoobarfoobar&lt;/ApiKey&gt;&lt;Status&gt;0&lt;/Status&gt;&lt;Error&gt;Invalid ApiKey&lt;/Error&gt;&lt;Token&gt;&lt;/Token&gt;&lt;/Auth&gt;'&#xA;return errorPayloadstr" name="text"/>
+                <property value="Groovy" name="engine"/>
+            </property-collection>
+        </properties>
+    </pattern>
+    <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger-FailingAuthXMLResponse-Token" entity-id="e701b7f6-1d74-4a7e-a4ad-0846440b6700">
+        <properties>
+            <property value="FailingAuthXMLResponse (Token branch): #[payload:]" name="message"/>
+            <property value="INFO" name="level"/>
+            <property name="category"/>
+        </properties>
+    </pattern>
+</lane>
+<lane hadOnlyOneElement="false" entity-id="cafc7476-bc63-49e9-a026-a3a3d2766f1a">
+    <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="ParseArgsOneMoreTime" entity-id="4162ed92-e7f9-48a6-83de-dd9daaeccf00">
+        <properties>
+            <property name="returnClass"/>
+            <property name="ignoreBadInput"/>
+            <property name="encoding"/>
+            <property name="mimeType"/>
+            <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                <property value="// remove a few vars from the args String&#xA;&#x9;&#x9;// apikey, token &amp; channel&#xA;&#x9;&#x9;&#xA;&#x9;&#x9;tmp = message.getSessionProperty('API-METHOD-ARGS')&#xA;&#x9;&#x9;//println 'tmp: ' + tmp&#xA;&#x9;&#x9;&#xA;&#x9;&#x9;// split args by &amp;&#xA;&#x9;&#x9;// and ignore the ? (first character)&#xA;&#x9;&#x9;argsArr = tmp[1..-1].split('&amp;')&#xA;&#x9;&#x9;//println 'argsArr: ' + argsArr&#xA;&#x9;&#x9;// e.g.  msgArr: [token=838481, channel=S, brand=B]&#xA;&#x9;&#x9;tmp2='?'&#xA;&#x9;&#x9;for ( foo in argsArr ) {&#xA;&#x9;&#x9;&#x9;// split by '='&#xA;&#x9;&#x9;&#x9;argsArr2 = foo.split('=')&#xA;&#x9;&#x9;&#x9;//println 'element name: ' + argsArr2[0]&#xA;&#x9;&#x9;    if ( (argsArr2[0].trim()!='apikey') &amp;&amp; (argsArr2[0].trim()!='token') &amp;&amp; (argsArr2[0].trim()!='channel') ) {&#xA;&#x9;&#x9;&#x9;&#x9;// element is not api'key', not 'token', not 'channel'&#xA;&#x9;&#x9;&#x9;&#x9;tmp2 = tmp2 + foo + '&amp;'&#xA;&#x9;&#x9;&#x9;}&#xA;&#x9;&#x9;}&#xA;&#x9;&#x9;//println 'tmp2: ' + tmp2&#xA;&#x9;&#x9;if (tmp2.length() &gt; 1) {&#xA;&#x9;&#x9;&#x9;message.setSessionProperty('API-METHOD-ARGS', tmp2[0..-2])&#xA;&#x9;&#x9;}&#xA;&#x9;&#x9;println &quot;sessionVars['API-METHOD-ARGS'] was updated to: &quot; + sessionVars['API-METHOD-ARGS']&#xA;&#x9;&#x9;return  payload" name="text"/>
+                <property value="Groovy" name="engine"/>
+            </property-collection>
+        </properties>
+    </pattern>
+    <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Confirm Updated Session Prop (API-METHOD-ARGS')" entity-id="c83f7fe9-7704-4e7a-a590-191513a41735">
+        <properties>
+            <property value="Updated API-METHOD-ARGS: #[groovy:message.getSessionProperty('API-METHOD-ARGS')]" name="message"/>
+            <property value="INFO" name="level"/>
+            <property name="category"/>
+        </properties>
+    </pattern>
+    <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM-mule-triton" entity-id="3a197be0-b319-440f-b81d-c8c14f5f42d0">
+        <properties>
+            <property value="one-way" name="exchange-pattern"/>
+            <property value="request-response" name="exchange-pattern"/>
+            <property value="triton.stub.Q.2" name="path"/>
+            <property name="businessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+            <property name="address"/>
+            <property name="responseTimeout"/>
+            <property name="encoding"/>
+            <property name="disableTransportTransformer"/>
+            <property name="mimeType"/>
+            <property name="connector-ref"/>
+            <property name="ref"/>
+            <property name="transformer-refs"/>
+            <property name="responseTransformer-refs"/>
+        </properties>
+    </endpoint>
+    <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger-TritonStubResponse" entity-id="845dc371-2d0d-445c-bf48-3011b929cb81">
+        <properties>
+            <property value="TritonStubResponse: #[payload:]" name="message"/>
+            <property value="INFO" name="level"/>
+            <property name="category"/>
+        </properties>
+    </pattern>
+</lane>
+                            </compartment>
+                        </splitter>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="ca2cd56c-e06e-4834-bd08-e5074db5dfd7">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/flow-ref" name="InvalidAuthentication" entity-id="a367e62b-8926-403d-b76c-6c4755935830">
+                            <properties>
+<property value="InvalidAuthentication" name="name"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </splitter>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/object-to-string-transformer" name="Object to String" entity-id="0cfd3571-6e9c-4c99-a554-bee20ef988e3">
+                <properties>
+                    <property name="returnClass"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mimeType"/>
+                </properties>
+            </pattern>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="AuthenticateWithApiKey">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="1bdede0c-4542-406d-8e6b-85393398f841">
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="23698187-916c-43f2-8b98-b2daeae9021f">
+                <properties>
+                    <property value="Payload Entering AuthenticateWithApiKey flow: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/mongo/mongo-connector" name="MongoDB-find-apikey" entity-id="5648e926-bcc7-4c4b-87fa-d26a1dc1d383">
+                <properties>
+                    <property value="MongoDB-CloudConnector" name="config-ref"/>
+                    <property value="http://www.mulesoft.org/schema/mule/mongo/find-one-object-using-query-map" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+                    <property value="MongoDB-CloudConnector" name="config-ref"/>
+                    <property value="authentication" name="collection"/>
+                    <property name=""/>
+                    <property value="admin" name="username"/>
+                    <property value="admin" name="password"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/mongo/find-one-object-using-query-map-query-attributess;0">
+                        <property-collection name="@http://www.mulesoft.org/schema/mule/mongo/find-one-object-using-query-map-query-attributes;1">
+                            <property value="#[payload:]" name="value"/>
+                            <property value="apikey" name="key"/>
+                        </property-collection>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="a8027962-d067-4a24-b09f-25f9d5d6e3b7">
+                <properties>
+                    <property-collection name="f04959f9-e282-4c5d-a9c9-36a38d736afd">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                    <property-collection name="0ce4cf7f-0bd9-4363-8035-d748b61b33d6">
+                        <property value="payload != null" name="choice.expression"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="9a71fa47-8bda-4c1a-afce-3420c8516eae"/>
+                <compartment entity-id="62577527-63f7-400e-be42-d54bf30d25cb">
+                    <lane hadOnlyOneElement="false" entity-id="0ce4cf7f-0bd9-4363-8035-d748b61b33d6">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="15f96fa4-deef-4896-ba57-923b44292f5f">
+                            <properties>
+<property value="Found ApiKey in Cache was successful, new payload: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="Set-tritonLoginArgs" entity-id="d5695504-2249-488a-b79e-27e6fb5a914e">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+    <property value="// overwrite the public URL Args with the private ones (triton compatible)&#xA;tritonLoginArgs = &quot;?Username=&quot; + payload.username.value + &quot;&amp;Password=&quot; + payload.password.value + &quot;&amp;ApiKey=&quot; + payload.apikey.value&#xA;return tritonLoginArgs" name="text"/>
+    <property value="Groovy" name="engine"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger-Auth-Success-w-Apikey" entity-id="73ee7466-d64e-48b0-a78c-c1d397e11453">
+                            <properties>
+<property value="Authenticate OK w APIKEY: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="f04959f9-e282-4c5d-a9c9-36a38d736afd">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/object-to-string-transformer" name="Object to String" entity-id="43dc4e77-621f-4914-a5a3-1a1dfa696539">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Auth Failed Logger" entity-id="00a66d25-4cd1-49ab-bf2e-9cc6421a826f">
+                            <properties>
+<property value="No Auth Object returned: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="Expression" entity-id="349fe7df-7ee5-4a01-9afa-d6cd29553b15">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property value="groovy" name="evaluator"/>
+<property value="false" name="expression"/>
+<property name="custom-evaluator"/>
+<property name="returnSourceIfNull"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </splitter>
+            <scope type="http://www.mulesoft.org/schema/mule/core/catch-exception-strategy" name="Catch Exception Strategy" entity-id="b0a6c3f0-3724-45f1-aa61-881e85c57f09">
+                <properties>
+                    <property name=""/>
+                    <property name="when"/>
+                    <property name="enableNotifications"/>
+                </properties>
+                <compartment entity-id="e44c6d67-897b-4c22-8591-52d60e1392d7">
+                    <lane hadOnlyOneElement="false" entity-id="27236f22-f40c-48ad-8524-a42582747863">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="f3540a57-280d-4710-9a48-0b1b2cf0dd6e">
+                            <properties>
+<property value="Exception: Could not connect to MongoDB  (Auth by ApiKey)" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="FALSE" entity-id="4ef15e59-53c0-46d7-bf74-3482e4b80ab7">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property value="groovy" name="evaluator"/>
+<property value="false" name="expression"/>
+<property name="custom-evaluator"/>
+<property name="returnSourceIfNull"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </scope>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="AuthenticateWithToken">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="0649acad-167d-4332-aa73-7ee3df850eee">
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="8de6a07e-1354-4c60-b78a-e9bada350095">
+                <properties>
+                    <property value="Inside Flow AuthenticateWithToken, payload: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/mongo/mongo-connector" name="MongoDB-find-apikey" entity-id="674d7549-d866-4202-9a6c-bfc42ab333b4">
+                <properties>
+                    <property value="MongoDB-CloudConnector" name="config-ref"/>
+                    <property value="http://www.mulesoft.org/schema/mule/mongo/find-one-object-using-query-map" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+                    <property value="MongoDB-CloudConnector" name="config-ref"/>
+                    <property value="authentication" name="collection"/>
+                    <property name=""/>
+                    <property value="admin" name="username"/>
+                    <property value="admin" name="password"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/mongo/find-one-object-using-query-map-query-attributess;0">
+                        <property-collection name="@http://www.mulesoft.org/schema/mule/mongo/find-one-object-using-query-map-query-attributes;1">
+                            <property value="#[payload:]" name="value"/>
+                            <property value="pseudocode" name="key"/>
+                        </property-collection>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="08ff8f7a-45fb-40e1-a233-f0c7fb3425d4">
+                <properties>
+                    <property-collection name="209aa6d1-6882-4723-af83-4bb131185c8e">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                    <property-collection name="b9464da2-7698-43a7-b3dd-12803f8c3a45">
+                        <property value="payload!=null" name="choice.expression"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="0a8d6d19-07dc-493e-af23-b9d6737347b9"/>
+                <compartment entity-id="4e0366bb-5af4-4b8a-9e9b-d9dbb60d01d9">
+                    <lane hadOnlyOneElement="false" entity-id="b9464da2-7698-43a7-b3dd-12803f8c3a45">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="3b4a0be2-e922-4768-9ba8-07138c925a3d">
+                            <properties>
+<property value="Auth Object returned: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="GetChannel-SetPort" entity-id="d7be5a12-e835-4582-a0b0-5315519973aa">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+    <property value="// get the channel S or M from the auth cache&#xA;// in case it's not passed by subsequent calls&#xA;// this call handles both situations&#xA;&#xA;// if sessionVars['TRITON-CHANNEL'] was not already set&#xA;if (sessionVars['TRITON-CHANNEL']!=null) {&#xA;&#x9;// read it from the DBObject returned from mongodb&#xA;&#x9;sessionVars['TRITON-CHANNEL']=payload.channel.value&#xA;&#x9;// note: the channel value is not set when the cache data is being loaded&#xA;    // from webwumst.csv&#xA;&#x9;// Umair to provide that data, and Data Mapper (DM) map must be updated accordingly&#xA;&#x9;// currently the channel field gets an empty string from the DM&#xA;}&#xA;&#xA;if (sessionVars['TRITON-CHANNEL']=='M')&#xA;&#x9;sessionVars['TRITON-PORT']=${triton.moorings.port}&#xA;else {&#xA;&#x9;if (sessionVars['TRITON-CHANNEL']=='S')&#xA;&#x9;&#x9;sessionVars['TRITON-PORT']=${triton.sunsail.port}&#xA;&#x9;else {&#xA;&#x9;&#x9;sessionVars['TRITON-PORT']=0&#xA;&#x9;&#x9;println &quot;Alert: TRITON-PORT = 0&quot;&#xA;&#x9;&#x9;// may be the default should be the moorings port?&#xA;&#x9;}&#xA;}&#xA;&#xA;&#xA;// set a session prop&#xA;return payload" name="text"/>
+    <property value="Groovy" name="engine"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="Only-Args" entity-id="397919cc-a934-430d-b8ee-d0d9c6d7b4f6">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property name="evaluator"/>
+<property value="#[header:session:API-METHOD-ARGS]" name="expression"/>
+<property name="custom-evaluator"/>
+<property name="returnSourceIfNull"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger-Auth-Success-w-Token" entity-id="fd118720-08be-4cca-8727-1ae2098091d9">
+                            <properties>
+<property value="Authenticate OK w TOKEN: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="209aa6d1-6882-4723-af83-4bb131185c8e">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/object-to-string-transformer" name="Object to String" entity-id="4c394165-e277-4bc8-871e-77ec001d1dbb">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="99563662-f5e3-40f4-876e-933795c75fb2">
+                            <properties>
+<property value="No Auth Object returned: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="Expression" entity-id="4fdf69a0-afdc-429a-8f98-a1785fb36cdd">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property value="groovy" name="evaluator"/>
+<property value="false" name="expression"/>
+<property name="custom-evaluator"/>
+<property name="returnSourceIfNull"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </splitter>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="true/false Logger" entity-id="6023c9e4-7420-433b-9da5-303c55616f17">
+                <properties>
+                    <property value="In flow testCacheAvailability: Is Cache Available: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <scope type="http://www.mulesoft.org/schema/mule/core/catch-exception-strategy" name="Catch Exception Strategy" entity-id="2230e752-1d12-4f5d-8816-0da8e144d14d">
+                <properties>
+                    <property name=""/>
+                    <property name="when"/>
+                    <property name="enableNotifications"/>
+                </properties>
+                <compartment entity-id="2b2762eb-dd67-4018-8914-0551ee918d70">
+                    <lane hadOnlyOneElement="false" entity-id="da30c4c1-dd6e-4414-8c46-2b8f2ccadf54">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="1e79bc0b-bf86-4d0e-827d-dbd2679219c7">
+                            <properties>
+<property value="Exception: Could not connect to MongoDB (Auth by Token)" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="FALSE" entity-id="2390586a-d3c7-4e6d-b46c-a798ff96f664">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property name="evaluator"/>
+<property value="false" name="expression"/>
+<property name="custom-evaluator"/>
+<property name="returnSourceIfNull"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </scope>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="InvalidAuthentication">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="2578e84b-f1c4-4a15-a3de-91f8596ec423">
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="space holder Logger" entity-id="674de410-0a72-4d19-8ceb-ebb173532a6c">
+                <properties>
+                    <property value="InvalidAuthentication Authentication: both apikey and token missing or passed simultaneously" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="returning default invalid authentication XML payload" entity-id="7a4e1577-f3e8-4f23-8b9f-e9720bf14df2">
+                <properties>
+                    <property name="returnClass"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mimeType"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                        <property value="resp = '&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;FoobarMethod&gt;&lt;Error&gt;Invalid Authentication: missing apikey or missing token or both apikey and token were passed in the request. Contact TUI Marine Technical support.&lt;/Error&gt;&lt;/FoobarMethod&gt;'&#xA;return resp" name="text"/>
+                        <property value="Groovy" name="engine"/>
+                    </property-collection>
+                </properties>
+            </pattern>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="ErrorHandling">
+        <properties>
+            <property value="synchronous" name="processingStrategy2"/>
+            <property value="synchronous" name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="67b83e2e-8066-4e8f-92ab-0db5def004a0">
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="b095e9ae-6d76-4c89-b60e-4e5d2869f0c8">
+                <properties>
+                    <property value="Inside Error Handling..." name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="FALSE" entity-id="92f222f3-2047-46ee-a1e0-53beddaa1c5b">
+                <properties>
+                    <property name="returnClass"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mimeType"/>
+                    <property name="evaluator"/>
+                    <property value="false" name="expression"/>
+                    <property name="custom-evaluator"/>
+                    <property name="returnSourceIfNull"/>
+                </properties>
+            </pattern>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="mule-triton-stub-1-authenticate-call">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <description>This is only a STUB when testing outside of the TUI VPN. Remove this flow.</description>
+        <lane hadOnlyOneElement="false" entity-id="9efa436b-cd63-4439-896b-71569001a4c9">
+            <endpoint message-exchange-pattern="OneWay" direction="Inbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM" entity-id="9510eaec-ee87-4af4-829d-e3f04cd7917d">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="request-response" name="exchange-pattern"/>
+                    <property value="triton.stub.Q.1" name="path"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property name="mimeType"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Stub-Interface-to-Mule-Triton" entity-id="a21db300-ecea-4c03-81e3-9fde006cfddf">
+                <properties>
+                    <property value="Connect here to Mule-triton for method: #[sessionVars['API-METHOD']]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="Simulate Triton Response (stub1)" entity-id="14876e47-62ec-4740-8ea9-919910b9fa0d">
+                <properties>
+                    <property name="returnClass"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mimeType"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                        <property value="resp = '&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;Auth&gt;&lt;AS400&gt;Active&lt;/AS400&gt;&lt;ApiKey&gt;z2pVJjtm2nHFvX/t1B4GrQ==&lt;/ApiKey&gt;&lt;Status&gt;1&lt;/Status&gt;&lt;Error/&gt;&lt;Token&gt;327352&lt;/Token&gt;&lt;/Auth&gt;'&#xA;return resp" name="text"/>
+                        <property value="Groovy" name="engine"/>
+                    </property-collection>
+                </properties>
+            </pattern>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="mule-triton-stub-2-subsequent-calls">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <description>This is only a STUB when testing outside of the TUI VPN. Remove this flow.</description>
+        <lane hadOnlyOneElement="false" entity-id="d6b1f924-6ae9-4ec5-ab07-b64b08535c3b">
+            <endpoint message-exchange-pattern="OneWay" direction="Inbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM" entity-id="6ce47c30-cd17-4679-a7c0-cefe7d44a031">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="request-response" name="exchange-pattern"/>
+                    <property value="triton.stub.Q.2" name="path"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property name="mimeType"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Stub-Interface-to-Mule-Triton" entity-id="2bf06d2e-dd22-432f-b041-bed80226eea0">
+                <properties>
+                    <property value="Connect here to Mule-triton for method: #[sessionVars['API-METHOD']]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="Simulate Triton Response (stub2)" entity-id="1efad68e-c24d-4ce3-9d45-56e16684e290">
+                <properties>
+                    <property name="returnClass"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mimeType"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                        <property value="methodInvoked = sessionVars['API-METHOD']&#xA;resp = '&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;AS400&gt;Active&lt;/AS400&gt;&lt;FakePayloadFor' + methodInvoked +'&gt;blahblah&lt;/FakePayloadFor' + methodInvoked +'&gt;&lt;Error/&gt;'&#xA;return resp" name="text"/>
+                        <property value="Groovy" name="engine"/>
+                    </property-collection>
+                </properties>
+            </pattern>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="triton_main_vm_flow">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="9d527adb-f1b0-44e4-9f46-d81648f93b8c">
+            <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM" entity-id="2fe7b344-f8e9-499d-b7a9-6e9bc746bb26">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="request-response" name="exchange-pattern"/>
+                    <property value="tritonQ" name="path"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property name="mimeType"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="ce5e318d-b1d4-407c-8e68-efbb8c932e13">
+                <properties>
+                    <property value="Inside tritonQ: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="9abefcf0-ed91-4f51-9593-18f089ec3412">
+                <properties>
+                    <property-collection name="ff09cd50-f76c-4f78-b5c3-ebcbaff9b938">
+                        <property value="sessionVars['API-CLASS']=='PROFILE'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="c1edd6ab-2c7c-4598-8a7b-19c3170600d9">
+                        <property value="sessionVars['API-CLASS']=='LOGIN'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="80d22e84-5793-4623-a256-5c2f7306f3fa">
+                        <property value="sessionVars['API-CLASS']=='STATUS'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="d2d9ddde-0b81-49f7-8a55-b0467d5af527">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                    <property-collection name="4810540d-2898-4f04-a276-c0d5d6d9a8f9">
+                        <property value="sessionVars['API-CLASS']=='BOOKING'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="9caab07e-424a-4817-8909-2fbd8775086a">
+                        <property value="sessionVars['API-CLASS']=='CACHE'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="810f14fe-5c09-43dd-bca5-f3532686a1a8">
+                        <property value="sessionVars['API-CLASS']=='SEARCH'" name="choice.expression"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="8bbe2248-ab50-439f-8f4d-0913d91f6949"/>
+                <compartment entity-id="e3be4b8e-daba-45b9-949f-ba2e97ff3084">
+                    <lane hadOnlyOneElement="false" entity-id="80d22e84-5793-4623-a256-5c2f7306f3fa">
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="Class_STATUS" entity-id="b3d13e18-b943-4e31-8ab0-1ab558c72422">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="STATUS" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="c1edd6ab-2c7c-4598-8a7b-19c3170600d9">
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="Class_LOGIN" entity-id="b79a5e87-7694-4548-9b1f-3c8950b7e93a">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="LOGIN" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="9caab07e-424a-4817-8909-2fbd8775086a">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/flow-ref" name="test-cache-availability" entity-id="72ed3e40-f44b-4858-a369-14a082faf465">
+                            <properties>
+<property value="testCacheAvailability" name="name"/>
+                            </properties>
+                        </pattern>
+                        <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="2beaaea5-abeb-4db6-8bd2-4d45873df49b">
+                            <properties>
+<property-collection name="20db4866-effd-4e69-9680-988ca2595559">
+    <property value="payload==true" name="choice.expression"/>
+</property-collection>
+<property-collection name="46fff02d-74ff-4057-af57-ee57a9ae0618">
+    <property value="true" name="choice.otherwise"/>
+</property-collection>
+                            </properties>
+                            <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="d8bbc290-5475-4f0d-a442-2f82dc9a7ac0"/>
+                            <compartment entity-id="1b2af839-7568-40e8-b91b-55eebceb8e96">
+<lane hadOnlyOneElement="false" entity-id="20db4866-effd-4e69-9680-988ca2595559">
+    <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="Only Args" entity-id="4dfa3f26-86ff-46a0-952a-b5570d0f0eec">
+        <properties>
+            <property name="returnClass"/>
+            <property name="ignoreBadInput"/>
+            <property name="encoding"/>
+            <property name="mimeType"/>
+            <property name="evaluator"/>
+            <property value="#[header:session:API-METHOD-ARGS]" name="expression"/>
+            <property name="custom-evaluator"/>
+            <property name="returnSourceIfNull"/>
+        </properties>
+    </pattern>
+    <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="Class_CACHE" entity-id="e88e1c80-921b-4918-8332-6358685dcc6d">
+        <properties>
+            <property value="one-way" name="exchange-pattern"/>
+            <property value="request-response" name="exchange-pattern"/>
+            <property value="CACHE" name="path"/>
+            <property name="businessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+            <property name="address"/>
+            <property name="responseTimeout"/>
+            <property name="encoding"/>
+            <property name="disableTransportTransformer"/>
+            <property name="mimeType"/>
+            <property name="connector-ref"/>
+            <property name="ref"/>
+            <property name="transformer-refs"/>
+            <property name="responseTransformer-refs"/>
+        </properties>
+    </endpoint>
+</lane>
+<lane hadOnlyOneElement="false" entity-id="46fff02d-74ff-4057-af57-ee57a9ae0618">
+    <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="Only Args" entity-id="e2fff29b-2661-479d-a117-372cb0306ee9">
+        <properties>
+            <property name="returnClass"/>
+            <property name="ignoreBadInput"/>
+            <property name="encoding"/>
+            <property name="mimeType"/>
+            <property name="evaluator"/>
+            <property value="#[header:session:API-METHOD-ARGS]" name="expression"/>
+            <property name="custom-evaluator"/>
+            <property name="returnSourceIfNull"/>
+        </properties>
+    </pattern>
+    <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="Class_SEARCH" entity-id="063fa604-b5cd-4699-885a-9489ab7efac8">
+        <properties>
+            <property value="one-way" name="exchange-pattern"/>
+            <property value="request-response" name="exchange-pattern"/>
+            <property value="SEARCH" name="path"/>
+            <property name="businessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+            <property name="address"/>
+            <property name="responseTimeout"/>
+            <property name="encoding"/>
+            <property name="disableTransportTransformer"/>
+            <property name="mimeType"/>
+            <property name="connector-ref"/>
+            <property name="ref"/>
+            <property name="transformer-refs"/>
+            <property name="responseTransformer-refs"/>
+        </properties>
+    </endpoint>
+</lane>
+                            </compartment>
+                        </splitter>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="810f14fe-5c09-43dd-bca5-f3532686a1a8">
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="Class_SEARCH" entity-id="568ce3a1-60b1-4dd4-b94c-a272f7d1a37b">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="SEARCH" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="4810540d-2898-4f04-a276-c0d5d6d9a8f9">
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="Class_BOOKING" entity-id="3dc8fc6d-ec49-46dd-a81c-cc4f268f36ea">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="BOOKING" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="ff09cd50-f76c-4f78-b5c3-ebcbaff9b938">
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="Class_PROFILE" entity-id="7f03bed2-349a-4df1-b147-f9b9f7ae9b01">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="PROFILE" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="d2d9ddde-0b81-49f7-8a55-b0467d5af527">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="172f0024-233b-4fcc-90d4-c6626554199b">
+                            <properties>
+<property value="In Main Flow, INVALID CLASS Name: #[groovy:message.getSessionProperty('API-CLASS')]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="DLQ" entity-id="a8096fc2-acb2-41ae-8280-0ab349cca191">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="one-way" name="exchange-pattern"/>
+<property value="DLQ" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                </compartment>
+            </splitter>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="Class_STATUS_flow">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="bcd45d92-dabe-4c79-8c88-efa796430f3b">
+            <endpoint message-exchange-pattern="OneWay" direction="Inbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM" entity-id="8960efa0-87c9-49af-9d29-c1240bb65601">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="request-response" name="exchange-pattern"/>
+                    <property value="STATUS" name="path"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property value="10000" name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property value="text/plain" name="mimeType"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="9853f0ca-7c02-46da-aefd-d213e58dd8ea">
+                <properties>
+                    <property value="In STATUS flow: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="9a159562-af13-40eb-8b07-30c7521da5be">
+                <properties>
+                    <property-collection name="50002dcf-bad9-4db6-906c-7231c8fa0d1b">
+                        <property value="sessionVars['API-METHOD']=='GetStatus'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="1df8b244-737d-4c17-8835-0b915f7e0225">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="11ca9e10-e16d-4f7c-8bdd-da1fb2655b97"/>
+                <compartment entity-id="cd35ec4a-6326-4c48-83c3-4d6692e70941">
+                    <lane hadOnlyOneElement="false" entity-id="50002dcf-bad9-4db6-906c-7231c8fa0d1b">
+                        <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="Remove Args" entity-id="81743df3-6526-49b7-b636-5cac963b39eb">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+    <property value="return null" name="text"/>
+    <property value="Groovy" name="engine"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="fbeb3b33-94eb-418b-bc97-b7a8e353fd55">
+                            <properties>
+<property value="INVOKING SETUP.GetStatus with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="STATUS.GetStatus" entity-id="7e819b6a-5896-4150-9f58-e31cfe9f6aa4">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLAS400.PGM" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property value="text/html" name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="1df8b244-737d-4c17-8835-0b915f7e0225">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="f40cf4a8-2d63-4373-8bfe-9d6aa5345411">
+                            <properties>
+<property value="In STATUS CLASS Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM-DLQ" entity-id="de119b3c-6504-4cac-bca6-27f634484b6f">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="one-way" name="exchange-pattern"/>
+<property value="DLQ" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                </compartment>
+            </splitter>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="Class_LOGIN_flow">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="4a60ec99-c672-402c-b756-58889d5cd944">
+            <endpoint message-exchange-pattern="OneWay" direction="Inbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM" entity-id="453a5c29-7ed9-49bc-a17b-5555bbfee24e">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="request-response" name="exchange-pattern"/>
+                    <property value="LOGIN" name="path"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property value="10000" name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property value="text/plain" name="mimeType"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="5f06a7a3-0e2b-46ac-9b41-297e4a46b973">
+                <properties>
+                    <property value="In LOGIN flow: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="org.mule.tooling.ui.modules.core.pattern.globalXformRef" name="OnlyArgs" entity-id="f403585b-31d9-49f3-8986-42fc5d79dc3f">
+                <properties>
+                    <property value="ONLY-API-METHOD-ARGS" name="ref"/>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="527e68c0-a3f8-4585-b623-36925617ef51">
+                <properties>
+                    <property-collection name="bb3ac8aa-eaf3-41f5-bc25-6c3112c8a815">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                    <property-collection name="8cafc752-fca5-499b-b3d6-c6eecf7731e6">
+                        <property value="sessionVars['API-METHOD']=='AuthenticateUser'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="96720c29-deae-4dae-96d9-cca04ede3134">
+                        <property value="sessionVars['API-METHOD']=='AuthenticateBroker'" name="choice.expression"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="e13acc4f-965c-4039-a621-86219433794c"/>
+                <compartment entity-id="1eb73285-0331-4e14-819e-15d5c6e372e3">
+                    <lane hadOnlyOneElement="false" entity-id="96720c29-deae-4dae-96d9-cca04ede3134">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="2155e8d8-5fc3-4d9a-876a-9a007a09f841">
+                            <properties>
+<property value="INVOKING LOGIN.AuthenticateBroker with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="LOGIN.AuthenticateBroker" entity-id="e84503a1-6fbe-44ac-b40b-cfc71ddb1b04">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLBRKVLD.PGM/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property value="text/html" name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/object-to-string-transformer" name="Object to String" entity-id="5732b2e0-3e72-4de0-94a6-35dbdd039024">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Response Payload Logger" entity-id="63b9d91c-e641-41b5-b703-e072dba1d32e">
+                            <properties>
+<property value="RESPONSE from AuthenticatedBroker: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/message-properties-transformer" name="Message Properties" entity-id="9ee5261d-fa71-4a35-a191-dec68f8107bb">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property name="overwrite"/>
+<property name="scope"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;0">
+    <property value="#[xpath:/Auth/Status]" name="value"/>
+    <property value="AUTH-STATUS" name="key"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Auth Status Logger" entity-id="4983e058-e5aa-4347-a0dd-57001b95deeb">
+                            <properties>
+<property value="AUTHENTICATION STATUS: #[message.outboundProperties['AUTH-STATUS']]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="8cafc752-fca5-499b-b3d6-c6eecf7731e6">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="edf574de-c208-4144-b64f-6fea15459bb5">
+                            <properties>
+<property value="INVOKING LOGIN.AuthenticateUser with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="LOGIN.AuthenticateUser" entity-id="c2fd72f8-7c5a-408f-9609-7afca40c2282">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLUSERDV1.PGM/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property value="text/html" name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="bb3ac8aa-eaf3-41f5-bc25-6c3112c8a815">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="fb7d30b7-5496-4764-bf00-29c65f71288b">
+                            <properties>
+<property value="In LOGIN CLASS Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM-DLQ" entity-id="6b6cef5c-1a01-40fb-9d52-e374aeaaaa92">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="one-way" name="exchange-pattern"/>
+<property value="DLQ" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                </compartment>
+            </splitter>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="Class_CACHE_flow">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="be95341f-03cc-49e3-acc5-3c4411a4aba4">
+            <endpoint message-exchange-pattern="OneWay" direction="Inbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM" entity-id="a41c6d7d-4c5c-4b1b-920a-b36cf5937979">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="request-response" name="exchange-pattern"/>
+                    <property value="CACHE" name="path"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property value="10000" name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property value="text/plain" name="mimeType"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="e17e2ade-c47d-4699-b374-414a202ab4b7">
+                <properties>
+                    <property value="In CACHE flow: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="org.mule.tooling.ui.modules.core.pattern.globalXformRef" name="OnlyArgs" entity-id="8b9b455b-f20c-4aee-b5ef-be1bf9b73c51">
+                <properties>
+                    <property value="ONLY-API-METHOD-ARGS" name="ref"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyTransformer" name="KVP_to_JSONquery" entity-id="ffa2cea9-984c-4a99-a04f-0a5de4099bc6">
+                <properties>
+                    <property name="returnClass"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mimeType"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                        <property value="/* continue implementation&#xA;generate a map from the list of Args&#xA; ?k1=v1&amp;k2=v2&amp;k3=v3 into &#xA;&#xA; def argmap = [k1:v1,&#xA;                 k2:v2,&#xA;                 k3:v3,&#xA;                 ...]&#xA;&#xA;see: http://blog.adaptivesoftware.biz/2009/04/groovy-maps.html&#xA;*/&#xA;// for now...&#xA;return payload" name="text"/>
+                        <property value="Groovy" name="engine"/>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="3acc7412-810b-4ad7-8c3d-e9662917b760">
+                <properties>
+                    <property-collection name="0e332039-be21-4c0c-9888-f60f1518e955">
+                        <property value="sessionVars['API-METHOD']=='GetAvailBoats'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="17d81ee0-8d83-4244-afd8-de2a0b283bcc">
+                        <property value="sessionVars['API-METHOD']=='GetBoats'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="a0563c81-0ffb-45aa-983e-60ee5354b8ee">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                    <property-collection name="7e44171b-cb2f-43af-8498-3f37ba27544c">
+                        <property value="sessionVars['API-METHOD']=='GetRate'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="cec04bbb-4157-4111-afcf-239d5227672f">
+                        <property value="sessionVars['API-METHOD']=='GetBases'" name="choice.expression"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="cbbc7b8c-fdc4-417d-94c2-8ccc4aff5eb1"/>
+                <compartment entity-id="0936e9a7-73e3-4ebc-abe8-f2959c541629">
+                    <lane hadOnlyOneElement="false" entity-id="cec04bbb-4157-4111-afcf-239d5227672f">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="4376e6ed-cffc-408f-ae1a-c2cfe4c10b19">
+                            <properties>
+<property value="INVOKING CACHE.GetBases with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/mongo/mongo-connector" name="CACHE.GetBases" entity-id="f09513bc-677e-4914-81ee-08380c5d6d82">
+                            <properties>
+<property value="MongoDB-CloudConnector" name="config-ref"/>
+<property value="http://www.mulesoft.org/schema/mule/mongo/find-one-object" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property value="MongoDB-CloudConnector" name="config-ref"/>
+<property value="bases" name="collection"/>
+<property value="#[payload:]" name="query-ref"/>
+<property name=""/>
+<property value="admin" name="username"/>
+<property value="admin" name="password"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/mongo/find-one-object-fieldss;0">
+    <property value="#[payload]" name="ref"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="17d81ee0-8d83-4244-afd8-de2a0b283bcc">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="4ddb1b60-cfc1-4d7c-9d7b-6e2607b8074c">
+                            <properties>
+<property value="INVOKING CACHE.GetBoats with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/mongo/mongo-connector" name="CACHE.GetBoats" entity-id="41ace337-48cf-4f0e-9922-f208d5b98429">
+                            <properties>
+<property value="MongoDB-CloudConnector" name="config-ref"/>
+<property value="http://www.mulesoft.org/schema/mule/mongo/find-one-object" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property value="MongoDB-CloudConnector" name="config-ref"/>
+<property value="boats" name="collection"/>
+<property value="#[payload:]" name="query-ref"/>
+<property name=""/>
+<property value="admin" name="username"/>
+<property value="admin" name="password"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/mongo/find-one-object-fieldss;0">
+    <property value="#[payload]" name="ref"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="0e332039-be21-4c0c-9888-f60f1518e955">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="6cc20c55-7ead-404a-9927-3eec3d2e5249">
+                            <properties>
+<property value="INVOKING CACHE.GetAvailBoats with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/mongo/mongo-connector" name="CACHE.GetAvailBoats" entity-id="eaca8016-c934-407a-abff-6c71aae713c0">
+                            <properties>
+<property value="MongoDB-CloudConnector" name="config-ref"/>
+<property value="http://www.mulesoft.org/schema/mule/mongo/find-one-object" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property value="MongoDB-CloudConnector" name="config-ref"/>
+<property value="availability" name="collection"/>
+<property value="#[payload:]" name="query-ref"/>
+<property name=""/>
+<property value="admin" name="username"/>
+<property value="admin" name="password"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/mongo/find-one-object-fieldss;0">
+    <property value="#[payload]" name="ref"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="7e44171b-cb2f-43af-8498-3f37ba27544c">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="667c7f9f-5d78-4cb5-a085-605640d7314a">
+                            <properties>
+<property value="INVOKING CACHE.GetRate with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/mongo/mongo-connector" name="GetRates (not yet)" entity-id="4e59c162-d291-4da1-af21-eb98c0d2dfa6">
+                            <properties>
+<property value="MongoDB-CloudConnector" name="config-ref"/>
+<property value="http://www.mulesoft.org/schema/mule/mongo/find-one-object" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property value="MongoDB-CloudConnector" name="config-ref"/>
+<property value="availability" name="collection"/>
+<property value="#[payload:]" name="query-ref"/>
+<property name=""/>
+<property value="admin" name="username"/>
+<property value="admin" name="password"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/mongo/find-one-object-fieldss;0">
+    <property value="#[payload]" name="ref"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="a0563c81-0ffb-45aa-983e-60ee5354b8ee">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="51d4293a-f572-4bd3-a6a7-5ef45d473db7">
+                            <properties>
+<property value="In CACHE CLASS Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM-DLQ" entity-id="6e34d3be-00ca-4a20-85a3-e5910c7b663a">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="one-way" name="exchange-pattern"/>
+<property value="DLQ" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                </compartment>
+            </splitter>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="Class_SEARCH_flow">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="aef5dc43-351e-4903-ac39-728c26054b4f">
+            <endpoint message-exchange-pattern="OneWay" direction="Inbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM" entity-id="b6259c8d-124d-4c65-82e0-66a7019c49da">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="request-response" name="exchange-pattern"/>
+                    <property value="SEARCH" name="path"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property value="10000" name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property value="text/plain" name="mimeType"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="6c78cff6-108b-4fc7-a136-a9eaf0ae33d7">
+                <properties>
+                    <property value="In SEARCH flow: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="org.mule.tooling.ui.modules.core.pattern.globalXformRef" name="OnlyArgs" entity-id="863aab7d-a366-402c-82fc-901a0d0da443">
+                <properties>
+                    <property value="ONLY-API-METHOD-ARGS" name="ref"/>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="1dc66f68-622f-435f-93e5-39b93cb41f1f">
+                <properties>
+                    <property-collection name="546c25a1-5770-48de-80d3-8a2ff1cb84d2">
+                        <property value="sessionVars['API-METHOD']=='GetFlight'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="b8195c6b-26e4-4fae-a291-ecdfdb83da3a">
+                        <property value="sessionVars['API-METHOD']=='GetAvailBoats'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="1d2d9266-6dd4-4753-94aa-0ede9265efbe">
+                        <property value="sessionVars['API-METHOD']=='GetContractHistory'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="ae221a4b-c936-4165-81e7-ef4b7aea716e">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                    <property-collection name="deedb156-50e6-479d-a018-62dfe1093fb6">
+                        <property value="sessionVars['API-METHOD']=='GetFlightRoute'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="03cc3462-0864-4edd-a060-ab67daaf9795">
+                        <property value="sessionVars['API-METHOD']=='GetRate'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="e4350b23-efc2-498b-ac38-88ce2979e8c9">
+                        <property value="sessionVars['API-METHOD']=='GetBoats'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="cb4ac762-be2b-4e43-b8eb-5f1f90aa9ea8">
+                        <property value="sessionVars['API-METHOD']=='GetBases'" name="choice.expression"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="f36b04c9-2d1f-431e-bb33-d4378ca75216"/>
+                <compartment entity-id="59cc2591-5ef2-496a-92d5-576cf70106eb">
+                    <lane hadOnlyOneElement="false" entity-id="cb4ac762-be2b-4e43-b8eb-5f1f90aa9ea8">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="ca594159-09e2-4032-8cc3-fa73a9809fb1">
+                            <properties>
+<property value="INVOKING SEARCH.GetBases with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="SEARCH.GetBases" entity-id="5ebabe51-298b-4c0f-891f-18fd1fe0c93a">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/xmlbases.pgm/#[payload:]" name="address"/>
+<property value="UTF-8" name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/xml" name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="e4350b23-efc2-498b-ac38-88ce2979e8c9">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="583603b2-cffd-4b41-a544-84661a9b823a">
+                            <properties>
+<property value="INVOKING SEARCH.GetBoats with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="SEARCH.GetBoats" entity-id="87fd986a-c12b-4cf6-b818-3b38d14cddc0">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLFULLST.pgm/#[payload:]" name="address"/>
+<property value="UTF-8" name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/xml" name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="1d2d9266-6dd4-4753-94aa-0ede9265efbe">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="463ea30b-97aa-496e-b413-1950135c8492">
+                            <properties>
+<property value="INVOKING SEARCH.ContractHistory with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="SEARCH.GetContractHistory" entity-id="b0752a2f-2591-480f-a2f8-5daeedc5e0ec">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLHSCLNV1.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="b8195c6b-26e4-4fae-a291-ecdfdb83da3a">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="45857f63-fac8-4b34-80ae-4edf9a0cd374">
+                            <properties>
+<property value="INVOKING SEARCH.GetAvailBoats with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="SEARCH.GetAvailBoats" entity-id="1506d122-f458-48d4-9547-20a4e9f39933">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLTYPESV1.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="03cc3462-0864-4edd-a060-ab67daaf9795">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="2cf931b2-c800-4ecd-b48e-19a3b0845536">
+                            <properties>
+<property value="INVOKING SEARCH.GetRate with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="SEARCH.GetRate" entity-id="f39672ae-8400-4f1b-b20e-026f3ca872b4">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPARMSV1.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="deedb156-50e6-479d-a018-62dfe1093fb6">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="9cb2de1b-bfc0-4219-bb66-4429f23c5e27">
+                            <properties>
+<property value="INVOKING SEARCH.GetFlightRoute with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="SEARCH.GetFlightRoute" entity-id="dfedc1eb-3f90-4502-8d26-e9420776d89c">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:1093/findform1/XMLROUTE.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                            <description>for SUNSAIL only, port is 1093</description>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="546c25a1-5770-48de-80d3-8a2ff1cb84d2">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="f39bc71e-a0a8-467b-b247-c3c773e5c7a3">
+                            <properties>
+<property value="INVOKING SEARCH.GetFlight with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="SEARCH.GetFlight" entity-id="ff1954dc-9c0d-46d2-aea0-c24fd8cda402">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLFLAVL.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                            <description>for SUNSAIL only port is 1093</description>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="ae221a4b-c936-4165-81e7-ef4b7aea716e">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="711a936b-da3e-4685-adec-b095d39bf1d6">
+                            <properties>
+<property value="In SEARCH CLASS Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM-DLQ" entity-id="aece6d0e-f4f4-41b0-93ab-4d7e7878f033">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="one-way" name="exchange-pattern"/>
+<property value="DLQ" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                </compartment>
+            </splitter>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="Class_BOOKING_flow">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="ddd2cdc1-007d-43f3-8378-4f7d2bebdd41">
+            <endpoint message-exchange-pattern="OneWay" direction="Inbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM" entity-id="0b799657-0a0a-4de9-9bae-05bdf14716c5">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="request-response" name="exchange-pattern"/>
+                    <property value="BOOKING" name="path"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property value="10000" name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property value="text/plain" name="mimeType"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="a2963248-02fe-4974-9acf-7ab73ea508ba">
+                <properties>
+                    <property value="In BOOKING flow: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="org.mule.tooling.ui.modules.core.pattern.globalXformRef" name="OnlyArgs" entity-id="c7c77169-6a3c-4807-9e45-66a68e9aa043">
+                <properties>
+                    <property value="ONLY-API-METHOD-ARGS" name="ref"/>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="9a05b16a-fcce-4ccb-9095-9139719e861b">
+                <properties>
+                    <property-collection name="339165d0-459d-4ece-83be-86a1ac39e0c0">
+                        <property value="sessionVars['API-METHOD']=='GetQuoteHistorySaved'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="b1fc8bff-548d-4555-ad1e-1d2ae1612537">
+                        <property value="sessionVars['API-METHOD']=='GetContractQuote'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="8c593b41-6f2a-4a0b-b7f3-122328c0d54d">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                    <property-collection name="707e33ea-a210-4807-a4c5-a92daf7bd7d8">
+                        <property value="sessionVars['API-METHOD']=='CreateOption'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="93cd5f4e-a2fa-4926-8bcb-38e497b47918">
+                        <property value="sessionVars['API-METHOD']=='GetPrices'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="d2f121bc-c722-49c8-bd96-ce7f956c3702">
+                        <property value="sessionVars['API-METHOD']=='GetQuoteHistory'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="57afa49e-6ff9-42b2-8d26-bc151c8dfb1e">
+                        <property value="sessionVars['API-METHOD']=='SaveQuote'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="31d15ea3-9e79-4d02-b59d-c69c646773e7">
+                        <property value="sessionVars['API-METHOD']=='GetAncillaryProducts'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="c651200c-7a5e-4432-9616-2a7fe0df7f25">
+                        <property value="sessionVars['API-METHOD']=='CreateQuote'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="ccb0ef11-3175-4c16-8bcf-c40eab36ebde">
+                        <property value="sessionVars['API-METHOD']=='GetQuote'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="d07cc48d-7dee-4628-92f3-07e7759a1393">
+                        <property value="sessionVars['API-METHOD']=='GetInsurPackages'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="8dc38026-6bbf-4f42-9d50-4196b48372bf">
+                        <property value="sessionVars['API-METHOD']=='AddFlightPassenger'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="17697d13-5526-4679-8db7-a94090aca239">
+                        <property value="sessionVars['API-METHOD']=='GetCallCenterQuote'" name="choice.expression"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="7c267c52-0e11-4bae-8990-f7101c814895"/>
+                <compartment entity-id="523d58d9-946e-498a-bbec-f0da31816c8c">
+                    <lane hadOnlyOneElement="false" entity-id="c651200c-7a5e-4432-9616-2a7fe0df7f25">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="c850af81-5cad-4be3-9b7e-502a53454319">
+                            <properties>
+<property value="INVOKING BOOKING.CreateQuote with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.CreateQuote" entity-id="5a96cf6a-b00a-4e27-a3b9-e1edb593ac52">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/xmlquotev1.pgm/#[payload:]" name="address"/>
+<property value="UTF-8" name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/xml" name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="339165d0-459d-4ece-83be-86a1ac39e0c0">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="58e0828a-731a-44ba-b74a-e444494a4845">
+                            <properties>
+<property value="INVOKING BOOKING.GetQuoteHistorySaved with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.GetQuoteHistorySaved" entity-id="5d1c36a4-3948-46b8-9b9a-083e40c94d01">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLQTCLNV1.pgm/#[payload:]" name="address"/>
+<property value="UTF-8" name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/xml" name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="d2f121bc-c722-49c8-bd96-ce7f956c3702">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="0f518d9c-61ce-4087-8d27-a5bf0e600f5e">
+                            <properties>
+<property value="INVOKING BOOKING.GetQuoteHistory with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.GetQuoteHistory" entity-id="893ab573-20ed-4b40-9f12-1703de5aa1ea">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLQCCLN.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="ccb0ef11-3175-4c16-8bcf-c40eab36ebde">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="c5a233ea-19a4-40d8-ba43-a7fcaa81d94e">
+                            <properties>
+<property value="INVOKING BOOKING.GetQuote with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.GetQuote" entity-id="2bcc46f7-c087-49e8-91f8-2c25634508f1">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLQTENQV1.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="17697d13-5526-4679-8db7-a94090aca239">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="99278f62-66dd-4037-9ce0-eaac7c1cb387">
+                            <properties>
+<property value="INVOKING BOOKING.GetCallCenterQuote with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.GetCallCenterQuote" entity-id="8654853a-f413-427e-9630-310c81b33601">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLCCENQ.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="b1fc8bff-548d-4555-ad1e-1d2ae1612537">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="d0afe048-cc3b-44da-a0e7-ec454e62fecb">
+                            <properties>
+<property value="INVOKING BOOKING.GetContractQuote with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.GetContractQuote" entity-id="539c34d5-2d60-4cc1-bdf9-fe7c2ad761ec">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLCNTENQV1.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="57afa49e-6ff9-42b2-8d26-bc151c8dfb1e">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="ad299188-dec0-4a99-9829-ed3a547d8a5b">
+                            <properties>
+<property value="INVOKING BOOKING.SaveQuote with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.SaveQuote" entity-id="9e4801af-22ac-43f6-888a-2d05c72618c2">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLQTSAV.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="93cd5f4e-a2fa-4926-8bcb-38e497b47918">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="194d497a-1265-48d2-818a-6fdc94a430ec">
+                            <properties>
+<property value="INVOKING BOOKING.GetPrices with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.GetPrices" entity-id="9b7a9d1e-4a60-401e-8147-b5e0574316c1">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPARMSV1.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="d07cc48d-7dee-4628-92f3-07e7759a1393">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="41d96940-a894-4355-aede-eb6f65d11ef0">
+                            <properties>
+<property value="INVOKING BOOKING.GetInsurPackages with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.GetInsurPackages" entity-id="f54049d1-4b96-4b75-882b-3569c92e076a">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLINSUR.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="31d15ea3-9e79-4d02-b59d-c69c646773e7">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="a67ce9b8-c612-485f-a04d-09df8b1cac79">
+                            <properties>
+<property value="INVOKING BOOKING.GetAncillaryProducts with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.GetAncillaryProducts" entity-id="c7812d56-6148-46fa-aa3d-e0471d480d29">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPRODSV1.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="8dc38026-6bbf-4f42-9d50-4196b48372bf">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="c0e381a5-d31f-461c-9c15-db97324a15f8">
+                            <properties>
+<property value="INVOKING BOOKING.AddFlightPassenger with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.AddFlightPassenger" entity-id="ad7dbfa0-c10a-445b-9969-ef32f37ba144">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPAINFO.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="707e33ea-a210-4807-a4c5-a92daf7bd7d8">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="0da20fa7-4a7a-4018-875b-e19e35244f04">
+                            <properties>
+<property value="INVOKING BOOKING.CreateOption with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="BOOKING.CreateOption" entity-id="20d3e65f-f132-47b6-9308-35c8c0c2fcd3">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLBRKOP.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="8c593b41-6f2a-4a0b-b7f3-122328c0d54d">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="163290ec-badc-4483-9f46-9a2697fb8eec">
+                            <properties>
+<property value="In BOOKING CLASS Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM-DLQ" entity-id="1d4c2a31-ddf4-454b-9335-731c48ad93df">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="one-way" name="exchange-pattern"/>
+<property value="DLQ" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                </compartment>
+            </splitter>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="Class_PROFILE_flow">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="53adb91c-055a-474b-94b4-a839237e244b">
+            <endpoint message-exchange-pattern="OneWay" direction="Inbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM" entity-id="855dc801-29f7-4548-9371-1fd90ea0c366">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="request-response" name="exchange-pattern"/>
+                    <property value="PROFILE" name="path"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property value="10000" name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property value="text/plain" name="mimeType"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="8db99f20-087d-4097-920b-e0d78dc0060b">
+                <properties>
+                    <property value="In PROFILE flow: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="org.mule.tooling.ui.modules.core.pattern.globalXformRef" name="OnlyArgs" entity-id="af0d71a1-e9c9-43ab-a41c-26e5bd5910e4">
+                <properties>
+                    <property value="ONLY-API-METHOD-ARGS" name="ref"/>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="bc693117-937e-451d-96de-228acb1efed1">
+                <properties>
+                    <property-collection name="12f79c69-6809-4190-94e8-9119a2f4c3b3">
+                        <property value="sessionVars['API-METHOD']=='ChangeUserPassword'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="fc1d4abd-723e-4eaf-8e0d-6368614e8dc9">
+                        <property value="sessionVars['API-METHOD']=='CreateUserProfile'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="5f24b4b4-231a-4444-875b-71ec867887f4">
+                        <property value="sessionVars['API-METHOD']=='UpdateUserProfile'" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="86b89e96-2ae3-4b83-80c2-1e40c8591396">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                    <property-collection name="a0243685-91d9-48e1-8519-74d903fa8812">
+                        <property value="sessionVars['API-METHOD']=='RetrieveUserPassword'" name="choice.expression"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="502a9eb1-e3a8-4ef0-b4a7-b06d7edefddb"/>
+                <compartment entity-id="7f2eae70-22b8-43ed-ad78-4892b64c1398">
+                    <lane hadOnlyOneElement="false" entity-id="5f24b4b4-231a-4444-875b-71ec867887f4">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="45c58e52-4c33-4a97-99e9-d1f3670b43c4">
+                            <properties>
+<property value="INVOKING PROFILE.UpdateUserProfile with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="PROFILE.UpdateUserProfile" entity-id="b3b27821-7401-4947-924d-58222e9fa91c">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLCUSERV1.pgm/#[payload:]" name="address"/>
+<property value="UTF-8" name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/xml" name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="fc1d4abd-723e-4eaf-8e0d-6368614e8dc9">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="97e9a114-c825-47b8-a940-30a606359bf0">
+                            <properties>
+<property value="INVOKING PROFILE.CreateUserProfile with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="PROFILE.CreateUserProfile" entity-id="f2413ff9-667c-4534-ad0f-35bd234ade14">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLNUSERV1.pgm/#[payload:]" name="address"/>
+<property value="UTF-8" name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/xml" name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="12f79c69-6809-4190-94e8-9119a2f4c3b3">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="dfc0b091-b068-489e-926d-823dddee239a">
+                            <properties>
+<property value="INVOKING PROFILE.ChangeUserPassword with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="PROFILE.ChangeUserPassword" entity-id="48c8c3e1-ec33-4377-84cf-8e8fa62518aa">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPWCHG.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="a0243685-91d9-48e1-8519-74d903fa8812">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="7d6909f5-1aad-4ef5-b318-ff58aa3e12ec">
+                            <properties>
+<property value="INVOKING PROFILE.RetrieveUserPassword with ARGS: #[payload:]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/http/endpoint" name="PROFILE.RetrieveUserPassword" entity-id="3aac8324-dcd2-4995-b859-ae834ee692ff">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="request-response" name="exchange-pattern"/>
+<property value="http://www.mulesoft.org/schema/mule/http/endpoint" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property name="httpLabel"/>
+<property name="host"/>
+<property name="port"/>
+<property name="path"/>
+<property value="GET" name="method"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property value="http://${triton.host}:#[sessionVars['TRITON-PORT']]/findform1/XMLPWORDV1.pgm/#[payload:]" name="address"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property name="mimeType"/>
+<property name="responseTimeout"/>
+<property name="followRedirects"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+<property name="user"/>
+<property name="password"/>
+<property name="contentType"/>
+<property name="keep-alive"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="86b89e96-2ae3-4b83-80c2-1e40c8591396">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="3c5db62c-1e70-4470-a10f-611697658d86">
+                            <properties>
+<property value="In SEARCH PROFILE Flow, INVALID METHOD Name: #[groovy:message.getSessionProperty('API-METHOD')]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="VM-DLQ" entity-id="7ee88bda-5d84-4b2c-8519-72f865e3a2b3">
+                            <properties>
+<property value="one-way" name="exchange-pattern"/>
+<property value="one-way" name="exchange-pattern"/>
+<property value="DLQ" name="path"/>
+<property name="businessEventsLabel"/>
+<property name="tracking:enable-default-events"/>
+<property name="address"/>
+<property value="10000" name="responseTimeout"/>
+<property name="encoding"/>
+<property name="disableTransportTransformer"/>
+<property value="text/plain" name="mimeType"/>
+<property name="connector-ref"/>
+<property name="ref"/>
+<property name="transformer-refs"/>
+<property name="responseTransformer-refs"/>
+                            </properties>
+                        </endpoint>
+                    </lane>
+                </compartment>
+            </splitter>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="testCacheAvailability">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="611c7bc1-e114-4082-8f98-cd0bd0c3fc8f">
+            <pattern type="http://www.mulesoft.org/schema/mule/mongo/mongo-connector" name="Mongo DB" entity-id="880932b6-bf17-4825-bc16-2e93dc0b1e1b">
+                <properties>
+                    <property value="MongoDB-CloudConnector" name="config-ref"/>
+                    <property value="http://www.mulesoft.org/schema/mule/mongo/find-objects-using-query-map" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+                    <property value="MongoDB-CloudConnector" name="config-ref"/>
+                    <property value="${mongodb.cache.collection.name}" name="collection"/>
+                    <property name="limit"/>
+                    <property name="numToSkip"/>
+                    <property name=""/>
+                    <property value="${mongodb.username}" name="username"/>
+                    <property value="${mongodb.password}" name="password"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/mongo/find-objects-using-query-map-query-attributess;0">
+                        <property-collection name="@http://www.mulesoft.org/schema/mule/mongo/find-objects-using-query-map-query-attributes;1">
+                            <property value="${mongodb.cache.check.value}" name="value"/>
+                            <property value="${mongodb.cache.check.key}" name="key"/>
+                        </property-collection>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="eb54447d-52e9-4c7d-9344-695f4429b9ff">
+                <properties>
+                    <property-collection name="2f811d16-2d81-470a-99ec-618269775fbf">
+                        <property value="payload.iterator().hasNext()" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="d906f5b9-6144-4ad9-9985-77237cd2488d">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="16541927-a381-450f-bfb9-6328d26c0782"/>
+                <compartment entity-id="98edc274-ef48-45d9-8823-115f5a32d796">
+                    <lane hadOnlyOneElement="false" entity-id="2f811d16-2d81-470a-99ec-618269775fbf">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="c9a701d0-b8c3-48d0-b6aa-295e75ef0c25">
+                            <properties>
+<property value="Cache content is valid and returns one or more object from 'availability' collection" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="Expression" entity-id="0197b0c1-1932-402a-af97-1092cd814da4">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property value="groovy" name="evaluator"/>
+<property value="true" name="expression"/>
+<property name="custom-evaluator"/>
+<property name="returnSourceIfNull"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="d906f5b9-6144-4ad9-9985-77237cd2488d">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="ac0e45c0-dc4c-4bc9-a9de-c2c9893f496b">
+                            <properties>
+<property value="Cache content is invalid. Unknown or empty 'availability' collection" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="Expression" entity-id="82d93f04-16e7-44ce-927a-3e5a3a6913b0">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property value="groovy" name="evaluator"/>
+<property value="false" name="expression"/>
+<property name="custom-evaluator"/>
+<property name="returnSourceIfNull"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </splitter>
+            <scope type="http://www.mulesoft.org/schema/mule/core/catch-exception-strategy" name="Catch Exception Strategy" entity-id="9876a5d2-aef5-4e42-93e1-be83605a65c7">
+                <properties>
+                    <property name=""/>
+                    <property name="when"/>
+                    <property name="enableNotifications"/>
+                </properties>
+                <compartment entity-id="280eebef-6eb8-4d00-987b-cd59b4c1fb95">
+                    <lane hadOnlyOneElement="false" entity-id="62880c3c-6892-43ed-8f08-c890997ca296">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="83f9938b-8479-4af1-985d-8f221ffcab5d">
+                            <properties>
+<property value="Could not connect to MongoDB" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/expression-transformer" name="FALSE" entity-id="6ab5621c-f0cc-4042-b443-f7cb8e392981">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property value="groovy" name="evaluator"/>
+<property value="false" name="expression"/>
+<property name="custom-evaluator"/>
+<property name="returnSourceIfNull"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </scope>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="DeadLetterQueue_flow">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="bf534811-b584-448f-b66a-0d519b10707e">
+            <endpoint message-exchange-pattern="OneWay" direction="Inbound" type="http://www.mulesoft.org/schema/mule/vm/endpoint" name="DLQ" entity-id="e534e59b-66bc-4f77-a237-868270f93209">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="DLQ" name="path"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property value="10000" name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property value="text/plain" name="mimeType"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="responseTransformer-refs"/>
+                </properties>
+            </endpoint>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="b807b9f3-a5dd-4449-8db8-aef40cd65e97">
+                <properties>
+                    <property value="Inside DLQ flow: #[payload:]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <endpoint message-exchange-pattern="OneWay" direction="Outbound" type="http://www.mulesoft.org/schema/mule/file/endpoint" name="File-DLQ" entity-id="b6adbabd-b798-4144-9d26-b19435f95a86">
+                <properties>
+                    <property value="one-way" name="exchange-pattern"/>
+                    <property value="${app.name}/DLQ" name="path"/>
+                    <property name="outputPattern"/>
+                    <property name="moveToPattern"/>
+                    <property name="moveToDirectory"/>
+                    <property name="pollingFrequency"/>
+                    <property name="fileAge"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="address"/>
+                    <property value="10000" name="responseTimeout"/>
+                    <property name="encoding"/>
+                    <property name="disableTransportTransformer"/>
+                    <property name="mimeType"/>
+                    <property name="comparator"/>
+                    <property name="reverseOrder"/>
+                    <property name="connector-ref"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                </properties>
+            </endpoint>
+        </lane>
+    </flow>
+</mule-configuration>
